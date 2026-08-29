@@ -786,6 +786,11 @@
       bottom: true, clean: 0.15,
       note: "砂の上をつつく底ぐらし。少し掃除もする。"
     },
+    eel: {
+      kind: "eel", name: "チンアナゴ", price: 95, rate: 1.9, size: 56,
+      c1: "#cfc6b2", c2: "#fbf8f0",
+      note: "砂から生えてゆらゆら。おどろくと引っこむ。"
+    },
     goldfish: {
       kind: "fish", name: "金魚", price: 130, rate: 2.3, size: 33, ratio: 0.66,
       c1: "#e3521f", c2: "#ffcf7a", fin: "#ff9b57", tail: "veil", mark: "none",
@@ -882,6 +887,7 @@
 
   function waterTop() { return H * 0.05; }
   function sandTop()  { return H * 0.80; }
+  function sandBase(x) { return sandTop() + 4 + Math.sin(x * 0.006) * 3; }
 
   function toast(msg) {
     const box = document.getElementById("toasts");
@@ -990,7 +996,28 @@
     };
     if (o.id != null && o.id >= state.nextId) state.nextId = o.id + 1;
     if (s.kind !== "fish" || s.bottom) p.y = sandTop() - rnd(2, 14);
+    if (s.kind === "eel") {
+      p.y = sandBase(p.x);
+      p.vx = 0;
+      p.ext = 0.15;          // how far out of the sand, 0..1
+      p.lean = 0;            // head reaching sideways for food
+      p.shy = 0;             // seconds left hiding after a scare
+    }
     return p;
+  }
+
+  // garden eels look best spaced out, so a new one picks the emptiest patch of sand
+  function freeEelX() {
+    const eels = state.pets.filter(p => SPECIES[p.key].kind === "eel");
+    if (!eels.length) return rnd(W * 0.15, W * 0.85);
+    let bestX = W * 0.5, bestD = -1;
+    for (let i = 0; i < 30; i++) {
+      const x = rnd(W * 0.1, W * 0.9);
+      let d = Infinity;
+      for (const e of eels) d = Math.min(d, Math.abs(e.x - x));
+      if (d > bestD) { bestD = d; bestX = x; }
+    }
+    return bestX;
   }
 
   function makeDecor(key, x, opts) {
@@ -1089,6 +1116,11 @@
       return;
     }
 
+    if (s.kind === "eel") {
+      updateEel(p, dt, px);
+      return;
+    }
+
     const hungry = p.full < 0.9;
     const food = hungry ? nearestFood(p, s.kind === "shrimp" ? W * 0.35 : W * 0.9) : null;
 
@@ -1152,11 +1184,61 @@
     tryEat(p, px * 0.6);
   }
 
-  function tryEat(p, reach) {
+  // garden eels stay in their burrow: they sway, lean after drifting food,
+  // and duck back into the sand when something startles them.
+  function updateEel(p, dt, px) {
+    p.x = clamp(p.x, px * 0.3, W - px * 0.3);
+    p.y = sandBase(p.x);
+    p.phase += dt * (state.night ? 0.5 : 1.05);
+    if (p.shy > 0) p.shy -= dt;
+
+    let target = 1;
+    if (state.night) target = 0.1;
+    if (p.shy > 0) target = Math.min(target, 0.14);
+
+    // a fish swimming right past makes them shrink back a little
+    for (const o of state.pets) {
+      if (o === p || SPECIES[o.key].kind !== "fish") continue;
+      const oL = petPx(o);
+      if (oL < px * 0.5) continue;
+      if (Math.hypot(o.x - p.x, o.y - (p.y - px * p.ext * 0.7)) < px * 0.6) {
+        target = Math.min(target, 0.4);
+        break;
+      }
+    }
+
+    p.ext = lerp(p.ext, target, 1 - Math.pow(p.ext > target ? 0.0004 : 0.35, dt));
+
+    const headY = p.y - px * p.ext;
+    const food = p.full < 0.95 ? nearestFoodAt(p.x, headY, px * 1.7) : null;
+    const want = food ? clamp((food.x - p.x) / (px * 0.5), -1, 1) : 0;
+    p.lean = lerp(p.lean, want, 1 - Math.pow(0.06, dt));
+
+    if (p.ext > 0.5) tryEat(p, px * 0.42, eelHeadX(p, px), headY);
+  }
+
+  function eelHeadX(p, px) {
+    return p.x + (Math.sin(p.phase + 2.3) * px * 0.13 * (1 - Math.abs(p.lean) * 0.6)
+                  + p.lean * px * 0.42) * p.ext;
+  }
+
+  function nearestFoodAt(x, y, reach) {
+    let best = null, bd = reach * reach;
+    for (const f of state.food) {
+      const dx = f.x - x, dy = f.y - y;
+      const d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = f; }
+    }
+    return best;
+  }
+
+  function tryEat(p, reach, hx, hy) {
     if (p.full >= 1) return;
+    const ax = hx != null ? hx : p.x;
+    const ay = hy != null ? hy : p.y;
     for (let i = state.food.length - 1; i >= 0; i--) {
       const f = state.food[i];
-      if (Math.hypot(f.x - p.x, f.y - p.y) < reach) {
+      if (Math.hypot(f.x - ax, f.y - ay) < reach) {
         state.food.splice(i, 1);
         p.full = clamp(p.full + 0.3, 0, 1);
         for (let j = 0; j < 4; j++) {
@@ -1491,6 +1573,108 @@
     g.restore();
   }
 
+  function drawEelShape(g, s, L, phase, ext, lean, seed, pale, current) {
+    const e = clamp(ext, 0, 1);
+
+    // the burrow itself, always visible
+    g.fillStyle = "rgba(122,104,73,.5)";
+    g.beginPath();
+    g.ellipse(0, 0, L * 0.11, L * 0.032, 0, 0, 7);
+    g.fill();
+    if (e < 0.05) return;
+
+    g.save();
+    if (pale) g.globalAlpha *= 0.85;
+
+    const N = 18;
+    const swayAmp = L * 0.16 * (1 - Math.abs(lean) * 0.55);
+    // a slow shared current makes a colony lean together, plus each eel's own wave
+    const nx = t => (Math.sin(phase + t * 2.6) * swayAmp
+                     + Math.sin(current) * L * 0.13 * t
+                     + lean * L * 0.42) * Math.pow(t, 1.25) * e;
+    const ny = t => -L * e * t;
+    const hw = t => L * 0.085 * (1 - t * 0.30) + L * 0.022 * Math.max(0, 1 - t * 6);
+    const headR = L * 0.086;
+
+    const body = new Path2D();
+    body.moveTo(nx(0) - hw(0), ny(0));
+    for (let i = 1; i <= N; i++) { const t = i / N; body.lineTo(nx(t) - hw(t), ny(t)); }
+    body.arc(nx(1), ny(1), hw(1), Math.PI, 0, true);
+    for (let i = N; i >= 0; i--) { const t = i / N; body.lineTo(nx(t) + hw(t), ny(t)); }
+    body.closePath();
+
+    const grad = g.createLinearGradient(-L * 0.1, 0, L * 0.1, 0);
+    grad.addColorStop(0, s.c1);
+    grad.addColorStop(0.45, s.c2);
+    grad.addColorStop(1, shade(s.c1, -0.14));
+    g.fillStyle = grad;
+    g.fill(body);
+
+    // spotting: fine speckles plus the three big blotches
+    g.save();
+    g.clip(body);
+    const r = mulberry32(seed);
+    g.fillStyle = "rgba(96,86,68,.42)";
+    for (let i = 0; i < 30; i++) {
+      const t = r();
+      g.beginPath();
+      g.arc(nx(t) + (r() - 0.5) * hw(t) * 1.7, ny(t), L * 0.011, 0, 7);
+      g.fill();
+    }
+    // two soft blotches, each pushed off-centre so they do not read as bands
+    g.fillStyle = "rgba(58,50,38,.5)";
+    for (const t of [0.3 + r() * 0.1, 0.68 + r() * 0.1]) {
+      g.beginPath();
+      g.ellipse(nx(t) + (r() - 0.5) * hw(t), ny(t), hw(t) * 0.95, L * 0.05, 0, 0, 7);
+      g.fill();
+    }
+    // shaded side, so the body reads as round
+    const shading = g.createLinearGradient(-hw(0.5) * 1.2, 0, hw(0.5) * 1.2, 0);
+    shading.addColorStop(0, "rgba(70,62,48,.30)");
+    shading.addColorStop(0.4, "rgba(70,62,48,0)");
+    shading.addColorStop(0.75, "rgba(255,255,255,.18)");
+    shading.addColorStop(1, "rgba(60,52,40,.22)");
+    g.fillStyle = shading;
+    g.fill(body);
+    g.restore();
+
+    // head
+    const hx = nx(1), hy = ny(1);
+    const tiltH = Math.atan2(nx(1) - nx(0.86), -(ny(1) - ny(0.86)));
+    g.save();
+    g.translate(hx, hy);
+    g.rotate(tiltH);
+
+    const hg = g.createLinearGradient(-headR, 0, headR, 0);
+    hg.addColorStop(0, shade(s.c1, -0.05));
+    hg.addColorStop(0.45, s.c2);
+    hg.addColorStop(1, shade(s.c1, -0.1));
+    g.fillStyle = hg;
+    g.beginPath();
+    g.ellipse(0, -headR * 0.12, headR * 0.92, headR * 1.05, 0, 0, 7);
+    g.fill();
+
+    g.fillStyle = "#211d16";
+    for (const sx of [-1, 1]) {
+      g.beginPath();
+      g.arc(sx * headR * 0.4, -headR * 0.3, Math.max(0.8, headR * 0.22), 0, 7);
+      g.fill();
+    }
+    g.fillStyle = "rgba(255,255,255,.8)";
+    for (const sx of [-1, 1]) {
+      g.beginPath();
+      g.arc(sx * headR * 0.4 - headR * 0.07, -headR * 0.38, Math.max(0.3, headR * 0.075), 0, 7);
+      g.fill();
+    }
+    g.fillStyle = "rgba(58,48,36,.75)";
+    g.beginPath();
+    g.ellipse(0, headR * 0.5, headR * 0.26, headR * 0.16, 0, 0, 7);
+    g.fill();
+    g.restore();
+
+    g.restore();
+  }
+
   function drawPet(g, p) {
     const s = SPECIES[p.key];
     const L = petPx(p);
@@ -1499,7 +1683,9 @@
     g.save();
     g.translate(p.x, p.y);
 
-    if (s.kind === "fish") {
+    if (s.kind === "eel") {
+      drawEelShape(g, s, L, p.phase, p.ext, p.lean, p.id * 977 + 13, pale, time * 0.33);
+    } else if (s.kind === "fish") {
       const flip = p.vx < 0 ? -1 : 1;
       const tilt = clamp(Math.atan2(p.vy, Math.abs(p.vx) + 4), -0.55, 0.55);
       g.scale(flip, 1);
@@ -1516,14 +1702,17 @@
     }
     g.restore();
 
+    const isEel = s.kind === "eel";
+    const markY = isEel ? p.y - L * p.ext - L * 0.16 : p.y - L * 0.65;
+
     // hunger marker
-    if (p.full < 0.22) {
+    if (p.full < 0.22 && (!isEel || p.ext > 0.4)) {
       const a = 0.45 + Math.sin(time * 3 + p.id) * 0.25;
       g.save();
       g.globalAlpha = a;
       g.fillStyle = "#ffb35c";
       g.beginPath();
-      g.arc(p.x, p.y - L * 0.65, Math.max(1.8, L * 0.09), 0, 7);
+      g.arc(p.x, markY, Math.max(1.8, L * 0.09), 0, 7);
       g.fill();
       g.restore();
     }
@@ -1536,7 +1725,11 @@
       g.setLineDash([4, 4]);
       g.lineDashOffset = -time * 14;
       g.beginPath();
-      g.ellipse(p.x, p.y, L * 0.78, L * 0.55, 0, 0, 7);
+      if (isEel) {
+        g.ellipse(p.x, p.y - L * p.ext * 0.5, L * 0.3, L * p.ext * 0.62 + L * 0.12, 0, 0, 7);
+      } else {
+        g.ellipse(p.x, p.y, L * 0.78, L * 0.55, 0, 0, 7);
+      }
       g.stroke();
       g.restore();
     }
@@ -1876,8 +2069,7 @@
     }
 
     // decor sits on the sand line
-    const baseFor = x => st + 4 + Math.sin(x * 0.006) * 3;
-    for (const d of state.decor) drawDecor(g, d, baseFor(d.x));
+    for (const d of state.decor) drawDecor(g, d, sandBase(d.x));
 
     // food
     g.fillStyle = night ? "#b08a4e" : "#e0a94f";
@@ -1888,7 +2080,11 @@
     }
 
     // creatures: bottom dwellers first so fish pass in front
-    for (const p of state.pets) if (SPECIES[p.key].kind !== "fish") drawPet(g, p);
+    for (const p of state.pets) if (SPECIES[p.key].kind === "eel") drawPet(g, p);
+    for (const p of state.pets) {
+      const k = SPECIES[p.key].kind;
+      if (k !== "fish" && k !== "eel") drawPet(g, p);
+    }
     for (const p of state.pets) if (SPECIES[p.key].kind === "fish") drawPet(g, p);
 
     // sparks
@@ -1991,6 +2187,17 @@
     if (SPECIES[key]) {
       const s = SPECIES[key];
       let L;
+      if (s.kind === "eel") {
+        L = Math.min(cw * 0.85, ch * 0.86);
+        g.save();
+        g.shadowColor = "rgba(0,0,0,.45)";
+        g.shadowBlur = 8;
+        g.shadowOffsetY = 3;
+        g.translate(cw / 2, ch * 0.94);
+        drawEelShape(g, s, L, 0.7, 1, 0, 4242, false, 0.5);
+        g.restore();
+        return;
+      }
       if (s.kind === "fish") {
         const hf = s.ratio * (s.tall ? 1.9 : 1.6);
         L = Math.min(cw * 0.62, ch * 0.9 / hf);
@@ -2096,6 +2303,13 @@
     let best = null, bd = Infinity;
     for (const p of state.pets) {
       const L = petPx(p);
+      if (SPECIES[p.key].kind === "eel") {
+        const top = p.y - L * p.ext - L * 0.1;
+        if (y < top || y > p.y + L * 0.1) continue;
+        const d = Math.abs(x - p.x);
+        if (d < L * 0.3 && d < bd) { bd = d; best = p; }
+        continue;
+      }
       const d = Math.hypot(x - p.x, y - p.y);
       if (d < L * 0.8 && d < bd) { bd = d; best = p; }
     }
@@ -2120,7 +2334,7 @@
     canvas.setPointerCapture(ev.pointerId);
     const p = canvasPos(ev);
     drag = { startX: p.x, startY: p.y, moved: false, decor: null };
-    if (!feedMode) {
+    if (!feedMode && !hitPet(p.x, p.y)) {
       const d = hitDecor(p.x, p.y);
       if (d) drag.decor = d;
     }
@@ -2146,7 +2360,10 @@
         sprinkle(p.x, p.y);
       } else {
         const pet = hitPet(p.x, p.y);
-        if (pet) openCard("pet", pet.id);
+        if (pet) {
+          if (SPECIES[pet.key].kind === "eel") pet.shy = rnd(2.6, 4.5);
+          openCard("pet", pet.id);
+        }
         else {
           const d = hitDecor(p.x, p.y);
           if (d) openCard("decor", d.id);
@@ -2256,8 +2473,9 @@
       return Object.keys(DECOR).map(k => ({ key: k, ...DECOR[k], group: "decor" }));
     }
     const wantFish = shopTab === "fish";
+    const onFishTab = k => SPECIES[k].kind === "fish" || SPECIES[k].kind === "eel";
     return Object.keys(SPECIES)
-      .filter(k => (SPECIES[k].kind === "fish") === wantFish)
+      .filter(k => onFishTab(k) === wantFish)
       .map(k => ({ key: k, ...SPECIES[k], group: "pet" }));
   }
 
@@ -2297,7 +2515,7 @@
     if (it.group === "pet") {
       if (state.pets.length >= CAPACITY) { toast("水槽がいっぱい"); return; }
       state.coins -= it.price;
-      const p = makePet(it.key, {});
+      const p = makePet(it.key, it.kind === "eel" ? { x: freeEelX() } : {});
       state.pets.push(p);
       toast(it.name + "「" + p.name + "」をむかえた");
     } else {
