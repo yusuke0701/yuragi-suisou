@@ -1756,11 +1756,92 @@
    * drawing: decor
    * ------------------------------------------------------------------ */
 
+  // a closed, irregular blob: radial points jittered by `rand`, smoothed with
+  // quadratics through their midpoints so the outline reads as stone, not an ellipse
+  function blobPath(cx, cy, rx, ry, rand, n, rough) {
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const k = 1 - rough * 0.5 + rand() * rough;
+      pts.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]);
+    }
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    const path = new Path2D();
+    let m = mid(pts[n - 1], pts[0]);
+    path.moveTo(m[0], m[1]);
+    for (let i = 0; i < n; i++) {
+      const p = pts[i], q = pts[(i + 1) % n];
+      const mm = mid(p, q);
+      path.quadraticCurveTo(p[0], p[1], mm[0], mm[1]);
+    }
+    path.closePath();
+    return path;
+  }
+
+  // sample a quadratic bezier into a polyline
+  function curvePts(x0, y0, cx, cy, x1, y1, n) {
+    const out = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, u = 1 - t;
+      out.push([u * u * x0 + 2 * u * t * cx + t * t * x1,
+                u * u * y0 + 2 * u * t * cy + t * t * y1]);
+    }
+    return out;
+  }
+
+  // a line running parallel to a polyline, at `f` of its half width (-1..1);
+  // `wob` lets the width breathe so limbs are not perfect cones
+  function limbEdge(pts, w0, w1, f, wob) {
+    const n = pts.length, out = [];
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const w = lerp(w0, w1, t) * (wob ? wob(t) : 1) / 2;
+      const p = pts[i];
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+      let dx = b[0] - a[0], dy = b[1] - a[1];
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len; dy /= len;
+      out.push([p[0] - dy * w * f, p[1] + dx * w * f]);
+    }
+    return out;
+  }
+
+  function limbPath(pts, w0, w1, wob) {
+    const left = limbEdge(pts, w0, w1, 1, wob);
+    const right = limbEdge(pts, w0, w1, -1, wob);
+    const path = new Path2D();
+    path.moveTo(left[0][0], left[0][1]);
+    for (let i = 1; i < left.length; i++) path.lineTo(left[i][0], left[i][1]);
+    for (let i = right.length - 1; i >= 0; i--) path.lineTo(right[i][0], right[i][1]);
+    path.closePath();
+    return path;
+  }
+
+  function strokePolyline(g, pts) {
+    g.beginPath();
+    pts.forEach((pt, i) => (i === 0 ? g.moveTo(pt[0], pt[1]) : g.lineTo(pt[0], pt[1])));
+    g.stroke();
+  }
+
+  const SOLID_DECOR = { rock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1, shell: 1 };
+
   function drawDecor(g, d, baseY, sizeOverride) {
     const s = sizeOverride || decorPx(d);
     const r = mulberry32(d.seed);
     g.save();
     g.translate(d.x, baseY);
+
+    // where a solid object meets the sand
+    if (SOLID_DECOR[d.key] && !sizeOverride) {
+      const sg = g.createRadialGradient(0, 0, s * 0.04, 0, 0, s * 0.62);
+      sg.addColorStop(0, "rgba(58,44,26,.34)");
+      sg.addColorStop(1, "rgba(58,44,26,0)");
+      g.fillStyle = sg;
+      g.beginPath();
+      g.ellipse(0, s * 0.02, s * 0.62, s * 0.1, 0, 0, 7);
+      g.fill();
+    }
+
     g.scale(d.flip, 1);
 
     switch (d.key) {
@@ -1823,80 +1904,244 @@
         break;
       }
       case "rock": {
-        for (let i = 0; i < 3; i++) {
-          const rx = (r() - 0.5) * s * 0.7;
-          const rr = s * (0.28 + r() * 0.26);
-          const grad = g.createLinearGradient(0, -rr, 0, 0);
-          grad.addColorStop(0, "#8b8f8c");
-          grad.addColorStop(1, "#4a5150");
+        const tones = [
+          ["#a2a6a1", "#6d726f", "#3e4444"],
+          ["#a8a08c", "#77705f", "#443f34"],
+          ["#98a1a6", "#6a7377", "#3b4245"]
+        ];
+        // back to front, so the smaller stones tuck in behind the main one
+        const stones = [
+          { x: -s * 0.30, w: s * 0.30, h: s * 0.24, t: 1 },
+          { x:  s * 0.31, w: s * 0.26, h: s * 0.20, t: 2 },
+          { x: -s * 0.02, w: s * 0.42, h: s * 0.36, t: 0 }
+        ];
+        for (const st of stones) {
+          const tone = tones[st.t];
+          const cy = -st.h * 0.82;
+          const path = blobPath(st.x, cy, st.w, st.h, r, 8, 0.5);
+
+          const grad = g.createLinearGradient(st.x, cy - st.h, st.x, cy + st.h);
+          grad.addColorStop(0, tone[0]);
+          grad.addColorStop(0.52, tone[1]);
+          grad.addColorStop(1, tone[2]);
           g.fillStyle = grad;
+          g.fill(path);
+
+          g.save();
+          g.clip(path);
+
+          // sunlit top face
+          g.fillStyle = "rgba(255,255,255,.16)";
+          g.fill(blobPath(st.x - st.w * 0.12, cy - st.h * 0.52, st.w * 0.72, st.h * 0.44, r, 9, 0.4));
+
+          // grain
+          g.fillStyle = "rgba(30,32,30,.16)";
+          for (let i = 0; i < 22; i++) {
+            g.beginPath();
+            g.arc(st.x + (r() - 0.5) * st.w * 2, cy + (r() - 0.5) * st.h * 2,
+                  s * (0.006 + r() * 0.012), 0, 7);
+            g.fill();
+          }
+
+          // a crack or two
+          g.strokeStyle = "rgba(28,30,29,.22)";
+          g.lineWidth = Math.max(0.6, s * 0.011);
+          g.lineJoin = "round";
+          let cxp = st.x + (r() - 0.5) * st.w * 0.8;
+          let cyp = cy - st.h * 0.7;
           g.beginPath();
-          g.ellipse(rx, -rr * 0.42, rr, rr * 0.72, (r() - 0.5) * 0.5, 0, 7);
-          g.fill();
+          g.moveTo(cxp, cyp);
+          for (let k = 0; k < 3; k++) {
+            cxp += (r() - 0.4) * st.w * 0.4;
+            cyp += st.h * (0.3 + r() * 0.25);
+            g.lineTo(cxp, cyp);
+          }
+          g.stroke();
+
+          // algae settling on the upper surface
+          g.fillStyle = "rgba(58,96,52,.34)";
+          for (let i = 0; i < 4; i++) {
+            g.beginPath();
+            g.ellipse(st.x + (r() - 0.5) * st.w * 1.5, cy - st.h * (0.35 + r() * 0.5),
+                      st.w * (0.1 + r() * 0.18), st.h * 0.12, (r() - 0.5), 0, 7);
+            g.fill();
+          }
+          g.restore();
+
+          // shaded underside, drawn as a rim so the stone sits in the sand
+          g.strokeStyle = "rgba(24,26,25,.22)";
+          g.lineWidth = Math.max(0.7, s * 0.016);
+          g.stroke(path);
         }
         break;
       }
       case "marimo": {
         const rr = s * 0.5;
-        const grad = g.createRadialGradient(-rr * 0.3, -rr * 0.9, rr * 0.1, 0, -rr, rr * 1.2);
-        grad.addColorStop(0, "#7fc86a");
-        grad.addColorStop(1, "#2f6b3c");
+        const cy = -rr;
+
+        // irregular outline rather than a perfect ball
+        const shape = blobPath(0, cy, rr, rr * 0.96, r, 14, 0.14);
+        const grad = g.createRadialGradient(-rr * 0.34, cy - rr * 0.4, rr * 0.08, 0, cy, rr * 1.15);
+        grad.addColorStop(0, "#8fd27a");
+        grad.addColorStop(0.55, "#4f9a52");
+        grad.addColorStop(1, "#255c33");
         g.fillStyle = grad;
-        g.beginPath();
-        g.arc(0, -rr, rr, 0, 7);
-        g.fill();
-        g.strokeStyle = "rgba(120,200,110,.55)";
-        g.lineWidth = Math.max(0.7, s * 0.03);
-        for (let i = 0; i < 40; i++) {
-          const a = r() * 7;
-          const len = rr * (0.08 + r() * 0.14);
+        g.fill(shape);
+
+        // fuzz: short tufts, denser and shorter than before
+        g.lineCap = "round";
+        for (let i = 0; i < 90; i++) {
+          const a = r() * Math.PI * 2;
+          const rad = rr * (0.86 + r() * 0.16);
+          const len = rr * (0.05 + r() * 0.09);
+          const lift = 1 - Math.max(0, Math.sin(a)) * 0.5;
+          g.strokeStyle = "rgba(" + (r() > 0.5 ? "126,196,110" : "62,124,64") + ",.75)";
+          g.lineWidth = Math.max(0.5, rr * 0.028);
           g.beginPath();
-          g.moveTo(Math.cos(a) * rr * 0.92, -rr + Math.sin(a) * rr * 0.92);
-          g.lineTo(Math.cos(a) * (rr + len), -rr + Math.sin(a) * (rr + len));
+          g.moveTo(Math.cos(a) * rad * 0.94, cy + Math.sin(a) * rad * 0.94);
+          g.lineTo(Math.cos(a) * (rad + len) * lift, cy + Math.sin(a) * (rad + len));
           g.stroke();
         }
+
+        // highlight
+        g.fillStyle = "rgba(190,240,170,.2)";
+        g.beginPath();
+        g.ellipse(-rr * 0.3, cy - rr * 0.42, rr * 0.4, rr * 0.24, -0.4, 0, 7);
+        g.fill();
         break;
       }
       case "driftwood": {
-        g.strokeStyle = "#5b4433";
-        g.lineCap = "round";
-        g.lineJoin = "round";
-        g.lineWidth = s * 0.13;
+        const limbs = [
+          // trunk: buried at the left, thick, gently S-curved
+          { pts: curvePts(-s * 0.50, -s * 0.03, -s * 0.14, -s * 0.26, s * 0.16, -s * 0.19, 16)
+                   .concat(curvePts(s * 0.16, -s * 0.19, s * 0.34, -s * 0.16, s * 0.49, -s * 0.10, 8).slice(1)),
+            w0: s * 0.21, w1: s * 0.055,
+            wob: t => (0.3 + 0.7 * Math.min(1, t * 7)) * (1 + Math.sin(t * 11) * 0.12) },
+          // main branch, rising and forking
+          { pts: curvePts(-s * 0.20, -s * 0.16, -s * 0.16, -s * 0.44, s * 0.02, -s * 0.62, 13),
+            w0: s * 0.115, w1: s * 0.022, wob: t => 1 + Math.sin(t * 8 + 1.7) * 0.16 },
+          { pts: curvePts(-s * 0.10, -s * 0.42, s * 0.06, -s * 0.50, s * 0.22, -s * 0.47, 9),
+            w0: s * 0.05, w1: s * 0.016, wob: t => 1 + Math.sin(t * 7 + 3) * 0.14 },
+          // stubby broken limb
+          { pts: curvePts(-s * 0.34, -s * 0.12, -s * 0.44, -s * 0.22, -s * 0.37, -s * 0.31, 8),
+            w0: s * 0.075, w1: s * 0.03,
+            wob: t => (0.5 + 0.5 * Math.min(1, t * 5)) * (1 + Math.sin(t * 9 + 2) * 0.12) }
+        ];
+
+        for (const limb of limbs) {
+          const path = limbPath(limb.pts, limb.w0, limb.w1, limb.wob);
+          const grad = g.createLinearGradient(0, -s * 0.62, 0, s * 0.02);
+          grad.addColorStop(0, "#8b7351");
+          grad.addColorStop(0.4, "#5c4630");
+          grad.addColorStop(1, "#31251a");
+          g.fillStyle = grad;
+          g.fill(path);
+
+          g.save();
+          g.clip(path);
+
+          // grain, running with the limb
+          g.strokeStyle = "rgba(36,26,16,.3)";
+          g.lineWidth = Math.max(0.5, s * 0.008);
+          for (const f of [-0.62, -0.24, 0.18, 0.58]) {
+            strokePolyline(g, limbEdge(limb.pts, limb.w0, limb.w1, f, limb.wob));
+          }
+
+          // light along the upper edge
+          g.strokeStyle = "rgba(226,196,150,.42)";
+          g.lineWidth = Math.max(0.8, s * 0.014);
+          strokePolyline(g, limbEdge(limb.pts, limb.w0, limb.w1, -0.78, limb.wob));
+
+          // dark underside
+          g.strokeStyle = "rgba(20,14,9,.34)";
+          g.lineWidth = Math.max(0.8, s * 0.018);
+          strokePolyline(g, limbEdge(limb.pts, limb.w0, limb.w1, 0.82, limb.wob));
+
+          // knots
+          g.fillStyle = "rgba(30,21,13,.55)";
+          for (let i = 0; i < 2; i++) {
+            const pt = limb.pts[Math.floor(r() * limb.pts.length)];
+            g.beginPath();
+            g.ellipse(pt[0], pt[1], s * 0.024, s * 0.015, r() * 2, 0, 7);
+            g.fill();
+          }
+          g.restore();
+        }
+
+        // sand heaped where the trunk goes under
+        const sandTone = state.night ? "158,145,116" : "234,216,178";
+        const mound = g.createRadialGradient(-s * 0.44, s * 0.01, s * 0.02, -s * 0.44, s * 0.01, s * 0.2);
+        mound.addColorStop(0, "rgba(" + sandTone + ",.92)");
+        mound.addColorStop(0.55, "rgba(" + sandTone + ",.8)");
+        mound.addColorStop(1, "rgba(" + sandTone + ",0)");
+        g.fillStyle = mound;
         g.beginPath();
-        g.moveTo(-s * 0.45, 0);
-        g.quadraticCurveTo(-s * 0.1, -s * 0.28, s * 0.34, -s * 0.20);
-        g.stroke();
-        g.lineWidth = s * 0.085;
-        g.beginPath();
-        g.moveTo(-s * 0.16, -s * 0.16);
-        g.quadraticCurveTo(-s * 0.06, -s * 0.5, s * 0.14, -s * 0.56);
-        g.moveTo(s * 0.12, -s * 0.23);
-        g.quadraticCurveTo(s * 0.3, -s * 0.42, s * 0.48, -s * 0.40);
-        g.stroke();
-        g.strokeStyle = "#79604a";
-        g.lineWidth = s * 0.03;
-        g.beginPath();
-        g.moveTo(-s * 0.4, -s * 0.02);
-        g.quadraticCurveTo(-s * 0.08, -s * 0.27, s * 0.3, -s * 0.20);
-        g.stroke();
+        g.ellipse(-s * 0.44, s * 0.012, s * 0.2, s * 0.055, 0, 0, 7);
+        g.fill();
+
+        // moss matted along the buried end
+        g.fillStyle = "rgba(72,118,64,.42)";
+        for (let i = 0; i < 8; i++) {
+          const bx = -s * 0.46 + r() * s * 0.42;
+          g.beginPath();
+          g.ellipse(bx, -s * 0.02 - r() * s * 0.045, s * (0.045 + r() * 0.04), s * 0.016,
+                    (r() - 0.5) * 0.5, 0, 7);
+          g.fill();
+        }
         break;
       }
       case "coral": {
+        const tipDots = [];
         const branch = (x, y, ang, len, w, depth) => {
-          const ex = x + Math.cos(ang) * len, ey = y + Math.sin(ang) * len;
-          g.strokeStyle = depth > 1 ? "#d95d86" : "#f79ab5";
-          g.lineWidth = w;
-          g.lineCap = "round";
+          const sway = Math.sin(time * 0.6 + depth * 1.3 + d.seed * 0.21) * 0.07;
+          const ex = x + Math.cos(ang + sway) * len;
+          const ey = y + Math.sin(ang + sway) * len;
+          const cx = x + Math.cos(ang - 0.2) * len * 0.6;
+          const cy = y + Math.sin(ang - 0.2) * len * 0.6;
+          const pts = curvePts(x, y, cx, cy, ex, ey, 8);
+          const path = limbPath(pts, w, w * 0.6);
+
+          const grad = g.createLinearGradient(x - w, y, x + w, y - len);
+          grad.addColorStop(0, depth > 1 ? "#b8446a" : "#d4638b");
+          grad.addColorStop(0.55, depth > 1 ? "#dd6f95" : "#f091b0");
+          grad.addColorStop(1, "#ffc3d4");
+          g.fillStyle = grad;
+          g.fill(path);
+
+          // rounded joint so the branches read as one organism
           g.beginPath();
-          g.moveTo(x, y);
-          g.lineTo(ex, ey);
-          g.stroke();
-          if (depth <= 0) return;
-          const sway = Math.sin(time * 0.7 + depth + d.seed) * 0.08;
-          branch(ex, ey, ang - 0.5 + sway, len * 0.68, w * 0.66, depth - 1);
-          branch(ex, ey, ang + 0.45 + sway, len * 0.66, w * 0.66, depth - 1);
+          g.arc(x, y, w * 0.5, 0, 7);
+          g.fill();
+
+          // polyps
+          g.save();
+          g.clip(path);
+          g.fillStyle = "rgba(255,225,235,.5)";
+          for (let k = 0; k < 7; k++) {
+            const t = k / 7;
+            const pt = pts[Math.floor(t * (pts.length - 1))];
+            g.beginPath();
+            g.arc(pt[0] + (r() - 0.5) * w * 0.5, pt[1] + (r() - 0.5) * w * 0.5, w * 0.12, 0, 7);
+            g.fill();
+          }
+          g.restore();
+
+          if (depth <= 0) { tipDots.push([ex, ey, w * 0.6]); return; }
+          branch(ex, ey, ang - 0.46 - r() * 0.16, len * 0.7, w * 0.62, depth - 1);
+          branch(ex, ey, ang + 0.42 + r() * 0.16, len * 0.68, w * 0.6, depth - 1);
+          if (depth === 3 && r() > 0.4) {
+            branch(ex, ey, ang + (r() - 0.5) * 0.3, len * 0.55, w * 0.45, depth - 2);
+          }
         };
-        branch(0, 0, -Math.PI / 2, s * 0.3, s * 0.11, 3);
+        branch(0, 0, -Math.PI / 2, s * 0.3, s * 0.185, 3);
+
+        // soft tips
+        g.fillStyle = "rgba(255,198,216,.9)";
+        for (const t of tipDots) {
+          g.beginPath();
+          g.arc(t[0], t[1], t[2] * 0.78, 0, 7);
+          g.fill();
+        }
         break;
       }
       case "airstone": {
