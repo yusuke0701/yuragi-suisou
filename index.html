@@ -1593,8 +1593,8 @@
                      + Math.sin(current) * L * 0.13 * t
                      + lean * L * 0.42) * Math.pow(t, 1.25) * e;
     const ny = t => -L * e * t;
-    const hw = t => L * 0.085 * (1 - t * 0.30) + L * 0.022 * Math.max(0, 1 - t * 6);
-    const headR = L * 0.086;
+    const hw = t => L * 0.084 * (1 - t * 0.17) + L * 0.012 * Math.max(0, 1 - t * 9);
+    const headR = L * 0.098;
 
     const body = new Path2D();
     body.moveTo(nx(0) - hw(0), ny(0));
@@ -1614,26 +1614,26 @@
     g.save();
     g.clip(body);
     const r = mulberry32(seed);
-    g.fillStyle = "rgba(96,86,68,.42)";
+    g.fillStyle = "rgba(66,62,54,.5)";
     for (let i = 0; i < 30; i++) {
-      const t = r();
+      const t = r() * 0.88;
       g.beginPath();
       g.arc(nx(t) + (r() - 0.5) * hw(t) * 1.7, ny(t), L * 0.011, 0, 7);
       g.fill();
     }
     // two soft blotches, each pushed off-centre so they do not read as bands
-    g.fillStyle = "rgba(58,50,38,.5)";
-    for (const t of [0.3 + r() * 0.1, 0.68 + r() * 0.1]) {
+    g.fillStyle = "rgba(54,50,44,.58)";
+    for (const t of [0.26 + r() * 0.1, 0.58 + r() * 0.1]) {
       g.beginPath();
       g.ellipse(nx(t) + (r() - 0.5) * hw(t), ny(t), hw(t) * 0.95, L * 0.05, 0, 0, 7);
       g.fill();
     }
     // shaded side, so the body reads as round
     const shading = g.createLinearGradient(-hw(0.5) * 1.2, 0, hw(0.5) * 1.2, 0);
-    shading.addColorStop(0, "rgba(70,62,48,.30)");
-    shading.addColorStop(0.4, "rgba(70,62,48,0)");
-    shading.addColorStop(0.75, "rgba(255,255,255,.18)");
-    shading.addColorStop(1, "rgba(60,52,40,.22)");
+    shading.addColorStop(0, "rgba(70,62,48,.22)");
+    shading.addColorStop(0.42, "rgba(70,62,48,0)");
+    shading.addColorStop(0.78, "rgba(255,255,255,.11)");
+    shading.addColorStop(1, "rgba(60,52,40,.18)");
     g.fillStyle = shading;
     g.fill(body);
     g.restore();
@@ -1645,31 +1645,48 @@
     g.translate(hx, hy);
     g.rotate(tiltH);
 
-    const hg = g.createLinearGradient(-headR, 0, headR, 0);
-    hg.addColorStop(0, shade(s.c1, -0.05));
-    hg.addColorStop(0.45, s.c2);
-    hg.addColorStop(1, shade(s.c1, -0.1));
+    // a round head, a touch wider than the neck, lit from the upper left
+    const hg = g.createRadialGradient(-headR * 0.35, -headR * 0.55, headR * 0.1,
+                                      0, -headR * 0.05, headR * 1.25);
+    hg.addColorStop(0, "#fffcf5");
+    hg.addColorStop(0.6, s.c2);
+    hg.addColorStop(1, shade(s.c1, -0.06));
     g.fillStyle = hg;
     g.beginPath();
-    g.ellipse(0, -headR * 0.12, headR * 0.92, headR * 1.05, 0, 0, 7);
+    g.ellipse(0, -headR * 0.02, headR, headR * 1.0, 0, 0, 7);
     g.fill();
 
-    g.fillStyle = "#211d16";
+    // cheeks
+    g.fillStyle = "rgba(226,138,122,.26)";
     for (const sx of [-1, 1]) {
       g.beginPath();
-      g.arc(sx * headR * 0.4, -headR * 0.3, Math.max(0.8, headR * 0.22), 0, 7);
+      g.ellipse(sx * headR * 0.58, headR * 0.16, headR * 0.25, headR * 0.17, 0, 0, 7);
       g.fill();
     }
-    g.fillStyle = "rgba(255,255,255,.8)";
+
+    // eyes
+    const er = Math.max(1, headR * 0.23);
+    const ey = -headR * 0.28;
+    g.fillStyle = "#241f18";
     for (const sx of [-1, 1]) {
       g.beginPath();
-      g.arc(sx * headR * 0.4 - headR * 0.07, -headR * 0.38, Math.max(0.3, headR * 0.075), 0, 7);
+      g.arc(sx * headR * 0.38, ey, er, 0, 7);
       g.fill();
     }
-    g.fillStyle = "rgba(58,48,36,.75)";
+    g.fillStyle = "rgba(255,255,255,.92)";
+    for (const sx of [-1, 1]) {
+      g.beginPath();
+      g.arc(sx * headR * 0.38 - er * 0.3, ey - er * 0.38, Math.max(0.35, er * 0.38), 0, 7);
+      g.fill();
+    }
+
+    // a small smile
+    g.strokeStyle = "rgba(88,70,54,.85)";
+    g.lineWidth = Math.max(0.8, headR * 0.11);
+    g.lineCap = "round";
     g.beginPath();
-    g.ellipse(0, headR * 0.5, headR * 0.26, headR * 0.16, 0, 0, 7);
-    g.fill();
+    g.arc(0, headR * 0.26, headR * 0.24, Math.PI * 0.3, Math.PI * 0.7);
+    g.stroke();
     g.restore();
 
     g.restore();
