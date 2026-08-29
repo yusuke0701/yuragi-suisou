@@ -478,6 +478,14 @@
     transition: transform 240ms cubic-bezier(.22, .8, .3, 1), opacity 180ms ease, visibility 0s;
   }
 
+  .card.is-top {
+    bottom: auto;
+    top: 60px;
+    transform: translate(-50%, -18px) scale(.97);
+  }
+
+  .card.is-top.is-open { transform: translate(-50%, 0) scale(1); }
+
   .card-top {
     display: flex;
     gap: 12px;
@@ -524,6 +532,56 @@
   }
 
   .meter-row .gauge { width: 100%; flex: 1 1 auto; }
+
+  .meter-row input[type="range"] {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 18px;
+    margin: 0;
+    background: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .meter-row input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #0c1b22;
+  }
+
+  .meter-row input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #0c1b22;
+  }
+
+  .meter-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border-radius: 50%;
+    background: var(--foam);
+    border: 2px solid #0c1f26;
+    cursor: grab;
+  }
+
+  .meter-row input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--foam);
+    border: 2px solid #0c1f26;
+    cursor: grab;
+  }
+
+  .size-val {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    min-width: 3.1em;
+    text-align: right;
+  }
 
   .card-acts {
     display: flex;
@@ -741,6 +799,11 @@
         <span>満腹</span>
         <span class="gauge" id="cardGauge"><span style="width:100%"></span></span>
       </div>
+      <div class="meter-row" id="cardSizeRow">
+        <span>大きさ</span>
+        <input type="range" id="cardSize" min="50" max="200" step="5" aria-label="かざりの大きさ">
+        <span class="size-val" id="cardSizeVal">&times;1.0</span>
+      </div>
     </div>
   </div>
   <div class="card-acts">
@@ -934,7 +997,7 @@
         id: p.id, key: p.key, name: p.name, full: p.full,
         nx: p.x / W, ny: p.y / H
       })),
-      decor: state.decor.map(d => ({ id: d.id, key: d.key, nx: d.x / W, flip: d.flip, seed: d.seed }))
+      decor: state.decor.map(d => ({ id: d.id, key: d.key, nx: d.x / W, flip: d.flip, seed: d.seed, sc: d.scale }))
     };
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* private mode */ }
   }
@@ -962,7 +1025,7 @@
     (data.decor || []).forEach(d => {
       if (!DECOR[d.key]) return;
       state.decor.push(makeDecor(d.key, clamp(Number(d.nx) || 0.5, 0.04, 0.96) * W, {
-        id: d.id, flip: d.flip, seed: d.seed
+        id: d.id, flip: d.flip, seed: d.seed, scale: d.sc
       }));
     });
 
@@ -1027,7 +1090,8 @@
       key,
       x: clamp(x, W * 0.05, W * 0.95),
       flip: o.flip != null ? o.flip : (Math.random() < 0.5 ? -1 : 1),
-      seed: o.seed != null ? o.seed : Math.floor(Math.random() * 1e6)
+      seed: o.seed != null ? o.seed : Math.floor(Math.random() * 1e6),
+      scale: clamp(Number(o.scale) || 1, DECOR_MIN, DECOR_MAX)
     };
   }
 
@@ -1040,8 +1104,10 @@
     return SPECIES[p.key].size * p.scale * tankScale();
   }
 
+  const DECOR_MIN = 0.5, DECOR_MAX = 2;
+
   function decorPx(d) {
-    return DECOR[d.key].size * tankScale() * 1.05;
+    return DECOR[d.key].size * tankScale() * 1.05 * (d.scale || 1);
   }
 
   /* ------------------------------------------------------------------ *
@@ -1645,51 +1711,78 @@
     g.translate(hx, hy);
     g.rotate(tiltH);
 
-    // a round head, a touch wider than the neck, lit from the upper left
-    const hg = g.createRadialGradient(-headR * 0.35, -headR * 0.55, headR * 0.1,
-                                      0, -headR * 0.05, headR * 1.25);
-    hg.addColorStop(0, "#fffcf5");
-    hg.addColorStop(0.6, s.c2);
-    hg.addColorStop(1, shade(s.c1, -0.06));
+    // The head silhouette is a cranium plus two bulging eyes and a snout.
+    // Garden eels really do have eyes that stick out sideways, and the bumps
+    // are what keeps this from reading as a smooth skull.
+    const eyeDX = headR * 0.66;
+    const eyeDY = -headR * 0.06;
+    const bulge = headR * 0.46;
+    const TAU = Math.PI * 2;
+
+    const headPath = new Path2D();
+    headPath.moveTo(headR * 0.8, -headR * 0.1);
+    headPath.ellipse(0, -headR * 0.1, headR * 0.8, headR * 0.92, 0, 0, TAU);
+    headPath.moveTo(-eyeDX + bulge, eyeDY);
+    headPath.arc(-eyeDX, eyeDY, bulge, 0, TAU);
+    headPath.moveTo(eyeDX + bulge, eyeDY);
+    headPath.arc(eyeDX, eyeDY, bulge, 0, TAU);
+    headPath.moveTo(headR * 0.44, headR * 0.6);
+    headPath.ellipse(0, headR * 0.6, headR * 0.44, headR * 0.38, 0, 0, TAU);
+
+    const hg = g.createRadialGradient(-headR * 0.3, -headR * 0.6, headR * 0.1,
+                                      0, 0, headR * 1.5);
+    hg.addColorStop(0, "#fffaec");
+    hg.addColorStop(0.55, "#f2e9d5");
+    hg.addColorStop(1, "#cfc2a6");
     g.fillStyle = hg;
+    g.fill(headPath);
+
+    // the body's speckling carries onto the head, so it reads as an animal
+    g.save();
+    g.clip(headPath);
+    g.fillStyle = "rgba(96,86,66,.34)";
+    for (let i = 0; i < 14; i++) {
+      g.beginPath();
+      g.arc((r() - 0.5) * headR * 2.4, (r() - 0.5) * headR * 1.9, headR * 0.07, 0, 7);
+      g.fill();
+    }
+    g.fillStyle = "rgba(226,138,122,.24)";
+    for (const sx of [-1, 1]) {
+      g.beginPath();
+      g.ellipse(sx * headR * 0.72, headR * 0.34, headR * 0.24, headR * 0.16, 0, 0, 7);
+      g.fill();
+    }
+    g.restore();
+
+    // eyes: beady, sitting in the bulges, with a warm rim rather than a hard edge
+    const pr = Math.max(0.9, bulge * 0.66);
+    for (const sx of [-1, 1]) {
+      const ex = sx * eyeDX;
+      g.fillStyle = "rgba(150,132,102,.35)";
+      g.beginPath();
+      g.arc(ex, eyeDY, pr * 1.22, 0, 7);
+      g.fill();
+      g.fillStyle = "#2b2318";
+      g.beginPath();
+      g.arc(ex, eyeDY, pr, 0, 7);
+      g.fill();
+      g.fillStyle = "rgba(255,255,255,.95)";
+      g.beginPath();
+      g.arc(ex - pr * 0.3, eyeDY - pr * 0.34, Math.max(0.4, pr * 0.34), 0, 7);
+      g.fill();
+      g.fillStyle = "rgba(255,255,255,.45)";
+      g.beginPath();
+      g.arc(ex + pr * 0.3, eyeDY + pr * 0.32, Math.max(0.25, pr * 0.16), 0, 7);
+      g.fill();
+    }
+
+    // a small open mouth at the tip of the snout
+    g.fillStyle = "rgba(94,66,52,.8)";
     g.beginPath();
-    g.ellipse(0, -headR * 0.02, headR, headR * 1.0, 0, 0, 7);
+    g.ellipse(0, headR * 0.78, headR * 0.17, headR * 0.13, 0, 0, 7);
     g.fill();
-
-    // cheeks
-    g.fillStyle = "rgba(226,138,122,.26)";
-    for (const sx of [-1, 1]) {
-      g.beginPath();
-      g.ellipse(sx * headR * 0.58, headR * 0.16, headR * 0.25, headR * 0.17, 0, 0, 7);
-      g.fill();
-    }
-
-    // eyes
-    const er = Math.max(1, headR * 0.23);
-    const ey = -headR * 0.28;
-    g.fillStyle = "#241f18";
-    for (const sx of [-1, 1]) {
-      g.beginPath();
-      g.arc(sx * headR * 0.38, ey, er, 0, 7);
-      g.fill();
-    }
-    g.fillStyle = "rgba(255,255,255,.92)";
-    for (const sx of [-1, 1]) {
-      g.beginPath();
-      g.arc(sx * headR * 0.38 - er * 0.3, ey - er * 0.38, Math.max(0.35, er * 0.38), 0, 7);
-      g.fill();
-    }
-
-    // a small smile
-    g.strokeStyle = "rgba(88,70,54,.85)";
-    g.lineWidth = Math.max(0.8, headR * 0.11);
-    g.lineCap = "round";
-    g.beginPath();
-    g.arc(0, headR * 0.26, headR * 0.24, Math.PI * 0.3, Math.PI * 0.7);
-    g.stroke();
-    g.restore();
-
-    g.restore();
+    g.restore();   // head transform
+    g.restore();   // body
   }
 
   function drawPet(g, p) {
@@ -2798,6 +2891,9 @@
   const cardMeta = document.getElementById("cardMeta");
   const cardGauge = document.getElementById("cardGauge");
   const cardMeterRow = document.getElementById("cardMeterRow");
+  const cardSizeRow = document.getElementById("cardSizeRow");
+  const cardSize = document.getElementById("cardSize");
+  const cardSizeVal = document.getElementById("cardSizeVal");
   const cardRelease = document.getElementById("cardRelease");
   const cardPreview = document.getElementById("cardPreview");
 
@@ -2815,7 +2911,9 @@
       cardName.disabled = false;
       cardMeta.textContent = s.name + " ・ 毎分+" + s.rate.toFixed(1) + (s.clean ? " ・ そうじ役" : "");
       cardMeterRow.style.display = "";
+      cardSizeRow.style.display = "none";
       cardRelease.textContent = "にがす (+" + Math.floor(s.price / 2) + ")";
+      card.classList.remove("is-top");
       drawPreview(cardPreview, item.key);
       refreshCardMeter();
     } else {
@@ -2824,7 +2922,11 @@
       cardName.disabled = true;
       cardMeta.textContent = "ドラッグで左右に動かせる";
       cardMeterRow.style.display = "none";
+      cardSizeRow.style.display = "";
+      cardSize.value = Math.round((item.scale || 1) * 100);
+      cardSizeVal.textContent = "\u00d7" + (item.scale || 1).toFixed(1);
       cardRelease.textContent = "しまう (+" + Math.floor(d.price / 2) + ")";
+      card.classList.add("is-top");
       drawPreview(cardPreview, item.key);
     }
     card.classList.add("is-open");
@@ -2845,6 +2947,18 @@
   }
 
   document.getElementById("cardClose").addEventListener("click", closeCard);
+
+  cardSize.addEventListener("input", () => {
+    if (!selected || selected.type !== "decor") return;
+    const d = state.decor.find(x => x.id === selected.id);
+    if (!d) return;
+    d.scale = clamp(Number(cardSize.value) / 100, DECOR_MIN, DECOR_MAX);
+    cardSizeVal.textContent = "\u00d7" + d.scale.toFixed(1);
+    const px = decorPx(d);
+    d.x = clamp(d.x, px * 0.5, W - px * 0.5);
+  });
+
+  cardSize.addEventListener("change", save);
 
   cardName.addEventListener("input", () => {
     if (!selected || selected.type !== "pet") return;
