@@ -1017,7 +1017,7 @@
     minami: {
       kind: "shrimp", name: "ミナミヌマエビ", price: 40, rate: 0.9, size: 15,
       c1: "#8fb59a", c2: "#dff0e2", clean: 0.35,
-      note: "コケを食べて水をきれいに保つ。"
+      note: "コケを食べて水をきれいに保つ。餌がなくてもやっていける。"
     },
     redbee: {
       kind: "shrimp", name: "レッドビーシュリンプ", price: 160, rate: 2.5, size: 15,
@@ -1027,7 +1027,7 @@
     snail: {
       kind: "snail", name: "石巻貝", price: 25, rate: 0.3, size: 13,
       c1: "#3d3126", c2: "#c7a878", clean: 0.6,
-      note: "ガラスのコケ取り担当。とにかく地道。"
+      note: "ガラスのコケ取り担当。コケが主食なので餌いらず。"
     }
   };
 
@@ -1281,7 +1281,14 @@
 
   function tickEconomy(dt, offline) {
     const hungerRate = 1 / (5 * 3600);
-    for (const p of state.pets) p.full = clamp(p.full - hungerRate * dt, 0, 1);
+    for (const p of state.pets) {
+      let full = p.full - hungerRate * dt;
+      // Cleaners graze on algae and biofilm rather than waiting for pellets,
+      // and they eat better the dirtier the tank is.
+      const clean = SPECIES[p.key].clean;
+      if (clean) full += clean * (0.55 + state.dirt * 1.1) / 3600 * dt;
+      p.full = clamp(full, 0, 1);
+    }
 
     const load = state.pets.length * 0.0000055 * (state.night ? 0.5 : 1);
     const scrub = cleanPower() * 0.0000042;
@@ -1318,11 +1325,20 @@
 
     if (s.kind === "snail") {
       p.steerT -= dt;
-      if (p.steerT <= 0) { p.steerT = rnd(3, 8); p.vx = rnd(-4, 4) || 3; }
+      const morsel = p.full < 0.95 ? nearestFood(p, px * 5) : null;
+      if (morsel) {
+        // creeping toward it, in the only way a snail knows
+        p.vx = lerp(p.vx, Math.sign(morsel.x - p.x) * 6, 1 - Math.pow(0.2, dt));
+        p.steerT = rnd(2, 5);
+      } else if (p.steerT <= 0) {
+        p.steerT = rnd(3, 8);
+        p.vx = rnd(-4, 4) || 3;
+      }
       p.x += p.vx * dt * slow;
       if (p.x < px * 0.6 || p.x > W - px * 0.6) { p.vx *= -1; p.x = clamp(p.x, px * 0.6, W - px * 0.6); }
       p.y = sandTop() - px * 0.18;
       p.phase += dt * 2;
+      tryEat(p, px * 0.8);
       return;
     }
 
