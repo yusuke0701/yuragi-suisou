@@ -112,6 +112,121 @@
   .name-input:hover { border-bottom-color: var(--line); }
   .name-input:focus { outline: none; border-bottom-color: var(--foam); }
 
+  .brand-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 6px 2px 0;
+    margin-left: -2px;
+    border-radius: 6px;
+    color: var(--ink-faint);
+    font-size: 10px;
+    letter-spacing: .16em;
+    transition: color 150ms;
+  }
+
+  .brand-btn:hover { color: var(--foam); }
+
+  .care-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--coral);
+    box-shadow: 0 0 6px rgba(255, 138, 99, .8);
+    display: none;
+  }
+
+  .care-dot.is-on { display: block; }
+
+  .tank-list {
+    padding: 2px 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow-y: auto;
+  }
+
+  .tank-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 15px;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: linear-gradient(#132831, #0e2028);
+    text-align: left;
+    transition: border-color 150ms;
+  }
+
+  .tank-row:hover { border-color: #3a6d7e; }
+  .tank-row.is-current { border-color: var(--foam); background: linear-gradient(#16323c, #102630); }
+  .tank-row[disabled] { opacity: .5; cursor: default; }
+  .tank-row[disabled]:hover { border-color: var(--line); }
+
+  .tank-biome {
+    font-size: 10px;
+    letter-spacing: .18em;
+    color: var(--ink-faint);
+  }
+
+  .tank-name {
+    font-family: "Kaisei Decol", "Hiragino Mincho ProN", serif;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.3;
+    margin-top: 1px;
+  }
+
+  .tank-meta {
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+  }
+
+  .tank-meta .care { color: var(--coral); font-weight: 700; }
+
+  .tank-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 999px;
+    white-space: nowrap;
+    background: #0f2029;
+    color: var(--ink-dim);
+  }
+
+  .tank-tag.is-now { background: var(--foam); color: #08191f; }
+  .tank-tag.is-buy { background: linear-gradient(#ff9c78, #f2643a); color: #2b1006; }
+
+  .good.is-locked { opacity: 1; }
+  .good.is-locked canvas { filter: grayscale(1) brightness(.55); }
+
+  .good-lock {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10.5px;
+    color: var(--gold);
+    line-height: 1.35;
+  }
+
+  .lock-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: #0c1b22;
+    overflow: hidden;
+  }
+
+  .lock-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #a3963f, var(--gold));
+  }
+
   .stats {
     margin-left: auto;
     display: flex;
@@ -301,6 +416,27 @@
   .rrow-bot .gauge { width: 100%; flex: 1 1 auto; }
 
   .rrow-bot .hungry { color: var(--coral); font-weight: 700; white-space: nowrap; }
+
+  .dex-list {
+    padding: 2px 18px 22px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dex-group {
+    font-size: 10px;
+    letter-spacing: .18em;
+    color: var(--ink-faint);
+    padding: 12px 4px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .dex-row .rrow-top .rate { color: var(--ink-faint); }
+  .dex-row.is-locked canvas { filter: grayscale(1) brightness(.5); }
+  .dex-row.is-locked .rrow-top span:first-child { color: var(--ink-faint); }
+  .dex-row .hint { position: static; transform: none; opacity: 1; background: none;
+                   border: none; padding: 0; color: var(--gold); font-size: 10.5px;
+                   white-space: normal; }
 
   .roster-empty {
     padding: 14px 2px 6px;
@@ -880,7 +1016,14 @@
 <div class="room" id="room">
   <header class="hud">
     <div class="brand">
-      <span class="brand-label">Aquarium</span>
+      <button class="brand-label brand-btn" id="tankBtn" aria-haspopup="dialog">
+        <span id="biomeLabel">熱帯魚</span>
+        <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor"
+             stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <path d="M1 1l3 3 3-3"></path>
+        </svg>
+        <span class="care-dot" id="careDot"></span>
+      </button>
       <input class="name-input" id="tankName" maxlength="14" aria-label="水槽の名前" spellcheck="false">
     </div>
 
@@ -1013,6 +1156,35 @@
   <div class="goods" id="goods"></div>
 </section>
 
+<section class="sheet" id="tanks" aria-label="水槽">
+  <div class="sheet-head">
+    <h2 class="sheet-title">水槽</h2>
+    <div class="stat" style="margin-left:auto">
+      <span class="coin-dot"></span>
+      <span class="stat-num" id="tanksCoins">0</span>
+    </div>
+    <button class="icon-btn" id="tanksClose" aria-label="閉じる">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M3.5 3.5l8 8M11.5 3.5l-8 8"></path>
+      </svg>
+    </button>
+  </div>
+  <div class="tank-list" id="tankList"></div>
+</section>
+
+<section class="sheet" id="dex" aria-label="図鑑">
+  <div class="sheet-head">
+    <h2 class="sheet-title">図鑑</h2>
+    <span class="stat-sub" id="dexCount" style="margin-left:auto"></span>
+    <button class="icon-btn" id="dexClose" aria-label="閉じる">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <path d="M3.5 3.5l8 8M11.5 3.5l-8 8"></path>
+      </svg>
+    </button>
+  </div>
+  <div class="dex-list" id="dexList"></div>
+</section>
+
 <section class="sheet" id="menu" aria-label="メニュー">
   <div class="sheet-head">
     <h2 class="sheet-title">メニュー</h2>
@@ -1023,6 +1195,7 @@
     </button>
   </div>
   <div class="menu-list">
+    <button class="menu-item" id="dexBtn">図鑑<small>これまでに出会った生きものと、解放の条件</small></button>
     <button class="menu-item" id="howBtn">あそびかた<small>タップでできることの一覧</small></button>
     <button class="menu-item is-warn" id="resetBtn">水槽をリセット<small>住人もかざりも全部いなくなります</small></button>
   </div>
@@ -1091,12 +1264,12 @@
     eel: {
       kind: "eel", name: "チンアナゴ", price: 95, rate: 1.9, size: 56,
       c1: "#cfc6b2", c2: "#fbf8f0",
-      note: "砂から生えてゆらゆら。おどろくと引っこむ。"
+      note: "砂から生えてゆらゆら。本当は海水魚なので、海水編ができたら引っ越す。"
     },
     goldfish: {
       kind: "fish", name: "金魚", price: 130, rate: 2.3, size: 33, ratio: 0.66,
       c1: "#e3521f", c2: "#ffcf7a", fin: "#ff9b57", tail: "veil", mark: "none",
-      note: "ゆったり泳ぐ定番。"
+      note: "中国生まれ、日本で育った定番。"
     },
     betta: {
       kind: "fish", name: "ベタ", price: 190, rate: 3.1, size: 28, ratio: 0.62,
@@ -1109,6 +1282,28 @@
       tall: true,
       note: "縦に長い体。水槽の主役。"
     },
+    yoshinobori: {
+      kind: "fish", name: "ヨシノボリ", price: 90, rate: 1.4, size: 25, ratio: 0.46,
+      c1: "#7a6a52", c2: "#ded0b3", fin: "#c3b18d", tail: "fan", mark: "spots",
+      bottom: true, clean: 0.12,
+      note: "石の上にちょこんと乗る。縄張り意識は強め。"
+    },
+    dojo: {
+      kind: "fish", name: "ドジョウ", price: 110, rate: 1.6, size: 36, ratio: 0.21,
+      c1: "#6b5c43", c2: "#c8b795", fin: "#a89473", tail: "fan", mark: "spots",
+      bottom: true, whisker: true, clean: 0.1,
+      note: "砂にもぐって休む。ひげが自慢。"
+    },
+    tanago: {
+      kind: "fish", name: "タナゴ", price: 140, rate: 1.8, size: 25, ratio: 0.54,
+      c1: "#7f939b", c2: "#f3f8f7", fin: "#eaa88e", tail: "fork", mark: "tanago",
+      note: "婚姻色の出た雄は驚くほど鮮やか。"
+    },
+    oikawa: {
+      kind: "fish", name: "オイカワ", price: 200, rate: 2.4, size: 30, ratio: 0.42,
+      c1: "#7d8f96", c2: "#f5f9f9", fin: "#e77fa8", tail: "fork", mark: "oikawa",
+      note: "清流の代表。雄は桃と緑の婚姻色をまとう。"
+    },
     minami: {
       kind: "shrimp", name: "ミナミヌマエビ", price: 40, rate: 0.9, size: 15,
       c1: "#8fb59a", c2: "#dff0e2", clean: 0.35,
@@ -1118,6 +1313,11 @@
       kind: "shrimp", name: "レッドビーシュリンプ", price: 160, rate: 2.5, size: 15,
       c1: "#c92c34", c2: "#fff4f0", clean: 0.3, banded: true,
       note: "紅白の縞。小さな宝石。"
+    },
+    sujiebi: {
+      kind: "shrimp", name: "スジエビ", price: 70, rate: 1.2, size: 17,
+      c1: "#a6b3ab", c2: "#eff4f0", clean: 0.25, striped: true,
+      note: "透明な体に走る黒い筋。やや気が荒い。"
     },
     snail: {
       kind: "snail", name: "石巻貝", price: 25, rate: 0.3, size: 13,
@@ -1133,8 +1333,79 @@
     marimo:    { name: "マリモ",   price: 55,  size: 30, note: "まるい。ただただ、まるい。" },
     driftwood: { name: "流木",     price: 60,  size: 78, note: "水槽が一気に自然っぽくなる。" },
     coral:     { name: "サンゴ",   price: 90,  size: 58, note: "枝ぶりが華やか。" },
+    leaves:    { name: "落ち葉",   price: 30,  size: 50, note: "沈めておくと隠れ家になる。和の一景。" },
+    bamboo:    { name: "竹筒",     price: 75,  size: 76, note: "ドジョウが好んで入る。日本の水辺らしさ。" },
     airstone:  { name: "エアストーン", price: 110, size: 22, note: "泡がのぼる。水がすこし澄む。", clean: 0.4 },
     castle:    { name: "お城",     price: 220, size: 80, note: "水槽の中の小さな城下町。" }
+  };
+
+  const BIOMES = {
+    tropical: {
+      name: "熱帯魚水槽", short: "熱帯魚", price: 0, order: 0,
+      note: "南米や東南アジアの魚たち。はじめの水槽。",
+      water: ["#1a7f97", "#0b566d", "#052d3c"],
+      waterNight: ["#0a2c3a", "#072430", "#04171f"],
+      sand: ["#ecdcb6", "#a8946f"],
+      sandNight: ["#9d906f", "#5c5340"],
+      pebble: ["#c6b189", "#8d7f61"],
+      mound: ["234,216,178", "158,145,116"],
+      ray: "178,238,255"
+    },
+    japanFresh: {
+      name: "日本の淡水魚", short: "日本淡水", price: 2600, order: 1,
+      note: "小川や田んぼの水辺。落ち着いた色の魚がそろう。",
+      water: ["#2f8f79", "#136058", "#062f2c"],
+      waterNight: ["#0d302c", "#082523", "#041816"],
+      sand: ["#d6c8a4", "#877b5c"],
+      sandNight: ["#8f8366", "#4f4835"],
+      pebble: ["#b6a887", "#7b7157"],
+      mound: ["214,200,164", "141,130,101"],
+      ray: "198,255,228"
+    }
+  };
+
+  const BIOME_KEYS = Object.keys(BIOMES).sort((a, b) => BIOMES[a].order - BIOMES[b].order);
+
+  // where each creature and ornament belongs; "both" shows up in every tank
+  const HOME = {
+    medaka: "both", minami: "both", snail: "both",
+    neon: "tropical", guppy: "tropical", cory: "tropical",
+    betta: "tropical", angel: "tropical", redbee: "tropical", eel: "tropical",
+    goldfish: "japanFresh", yoshinobori: "japanFresh", dojo: "japanFresh",
+    tanago: "japanFresh", oikawa: "japanFresh", sujiebi: "japanFresh",
+
+    plant: "both", rock: "both", driftwood: "both", shell: "both", airstone: "both",
+    castle: "tropical", coral: "tropical",
+    marimo: "japanFresh", leaves: "japanFresh", bamboo: "japanFresh"
+  };
+
+  const inBiome = (key, biome) => HOME[key] === "both" || HOME[key] === biome;
+
+  // species that have to be earned, and what earns them
+  const UNLOCKS = {
+    sujiebi: {
+      need: 0, hint: "日本の水槽で3種類以上の生きものを飼う",
+      holds: t => new Set(t.pets.map(p => p.key)).size >= 3
+    },
+    yoshinobori: {
+      need: 0, hint: "日本の水槽に岩と流木をあわせて3つ置く",
+      holds: t => t.decor.filter(d => d.key === "rock" || d.key === "driftwood").length >= 3
+    },
+    tanago: {
+      need: 6 * 3600, hint: "メダカを3匹、満腹80%以上で飼う",
+      holds: t => {
+        const m = t.pets.filter(p => p.key === "medaka");
+        return m.length >= 3 && m.every(p => p.full >= 0.8);
+      }
+    },
+    dojo: {
+      need: 12 * 3600, hint: "日本の水槽の水質を90%以上にたもつ",
+      holds: t => t.dirt <= 0.1
+    },
+    oikawa: {
+      need: 24 * 3600, hint: "日本の水槽のきげんを85%以上にたもつ",
+      holds: t => moodOf(t) >= 0.85
+    }
   };
 
   const NAME_POOL = ["ぷか", "あおば", "こむぎ", "しらす", "もなか", "きなこ", "つぶら",
@@ -1145,18 +1416,45 @@
    * state
    * ------------------------------------------------------------------ */
 
+  function makeTank(biome, name) {
+    return {
+      biome,
+      name: name || BIOMES[biome].name,
+      dirt: 0,
+      night: false,
+      seed: Math.floor(Math.random() * 1e9),
+      pets: [],
+      decor: [],
+      px: true            // are pets/decor in pixels (active) or normalised (stored)?
+    };
+  }
+
   const state = {
-    name: "はじめての水槽",
     coins: 150,
-    dirt: 0,
-    night: false,
-    seed: Math.floor(Math.random() * 1e9),
-    pets: [],
-    decor: [],
-    food: [],
     nextId: 1,
-    savedAt: Date.now()
+    savedAt: Date.now(),
+    current: "tropical",
+    tanks: { tropical: makeTank("tropical", "はじめての水槽") },
+    dex: { unlocked: {}, prog: {} },
+    food: []
   };
+
+  // the tank on screen; everything else is kept in normalised coordinates
+  let tank = state.tanks.tropical;
+
+  function denormTank(t) {
+    if (t.px) return;
+    for (const p of t.pets) { p.x *= W; p.y *= H; }
+    for (const d of t.decor) d.x *= W;
+    t.px = true;
+  }
+
+  function normTank(t) {
+    if (!t.px) return;
+    for (const p of t.pets) { p.x /= W; p.y /= H; }
+    for (const d of t.decor) d.x /= W;
+    t.px = false;
+  }
 
   const canvas = document.getElementById("tank");
   const ctx = canvas.getContext("2d");
@@ -1213,7 +1511,7 @@
   }
 
   function freshName() {
-    const used = new Set(state.pets.map(p => p.name));
+    const used = new Set(tank.pets.map(p => p.name));
     const free = NAME_POOL.filter(n => !used.has(n));
     return free.length ? pick(free) : pick(NAME_POOL) + Math.floor(rnd(2, 99));
   }
@@ -1224,52 +1522,96 @@
 
   function save() {
     state.savedAt = Date.now();
+    const tanks = {};
+    for (const key in state.tanks) {
+      const t = state.tanks[key];
+      const sx = t.px ? 1 / W : 1, sy = t.px ? 1 / H : 1;
+      tanks[key] = {
+        name: t.name, dirt: t.dirt, night: t.night, seed: t.seed,
+        pets: t.pets.map(p => ({
+          id: p.id, key: p.key, name: p.name, full: p.full,
+          nx: p.x * sx, ny: p.y * sy
+        })),
+        decor: t.decor.map(d => ({
+          id: d.id, key: d.key, nx: d.x * sx, flip: d.flip, seed: d.seed, sc: d.scale
+        }))
+      };
+    }
     const data = {
-      v: 1,
-      name: state.name,
+      v: 2,
       coins: state.coins,
-      dirt: state.dirt,
-      night: state.night,
-      seed: state.seed,
-      savedAt: state.savedAt,
       nextId: state.nextId,
-      pets: state.pets.map(p => ({
-        id: p.id, key: p.key, name: p.name, full: p.full,
-        nx: p.x / W, ny: p.y / H
-      })),
-      decor: state.decor.map(d => ({ id: d.id, key: d.key, nx: d.x / W, flip: d.flip, seed: d.seed, sc: d.scale }))
+      savedAt: state.savedAt,
+      current: state.current,
+      tanks,
+      dex: state.dex
     };
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* private mode */ }
+  }
+
+  // v1 held a single tank at the top level; it becomes the tropical tank
+  function migrateV1(d) {
+    return {
+      v: 2,
+      coins: d.coins, nextId: d.nextId, savedAt: d.savedAt,
+      current: "tropical",
+      tanks: {
+        tropical: {
+          name: d.name, dirt: d.dirt, night: d.night, seed: d.seed,
+          pets: d.pets || [], decor: d.decor || []
+        }
+      },
+      dex: { unlocked: {}, prog: {} }
+    };
   }
 
   function load() {
     let data = null;
     try { data = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch (e) { data = null; }
-    if (!data || data.v !== 1) return false;
+    if (!data) return false;
+    if (data.v === 1) data = migrateV1(data);
+    if (data.v !== 2 || !data.tanks) return false;
 
-    state.name = typeof data.name === "string" ? data.name : state.name;
     state.coins = Number(data.coins) || 0;
-    state.dirt = clamp(Number(data.dirt) || 0, 0, 1);
-    state.night = !!data.night;
-    state.seed = Number(data.seed) || state.seed;
     state.nextId = Number(data.nextId) || 1;
+    state.dex = {
+      unlocked: (data.dex && data.dex.unlocked) || {},
+      prog: (data.dex && data.dex.prog) || {}
+    };
 
-    (data.pets || []).forEach(p => {
-      if (!SPECIES[p.key]) return;
-      state.pets.push(makePet(p.key, {
-        id: p.id, name: p.name, full: clamp(Number(p.full), 0, 1),
-        x: clamp(Number(p.nx) || 0.5, 0.05, 0.95) * W,
-        y: clamp(Number(p.ny) || 0.5, 0.08, 0.9) * H
-      }));
-    });
-    (data.decor || []).forEach(d => {
-      if (!DECOR[d.key]) return;
-      state.decor.push(makeDecor(d.key, clamp(Number(d.nx) || 0.5, 0.04, 0.96) * W, {
-        id: d.id, flip: d.flip, seed: d.seed, scale: d.sc
-      }));
-    });
+    state.tanks = {};
+    for (const key in data.tanks) {
+      if (!BIOMES[key]) continue;
+      const td = data.tanks[key];
+      const t = makeTank(key, typeof td.name === "string" ? td.name : null);
+      t.dirt = clamp(Number(td.dirt) || 0, 0, 1);
+      t.night = !!td.night;
+      t.seed = Number(td.seed) || t.seed;
+      t.px = false;
 
-    // offline progress, capped at 12h
+      (td.pets || []).forEach(pd => {
+        if (!SPECIES[pd.key]) return;
+        const p = makePet(pd.key, {
+          id: pd.id, name: pd.name, full: clamp(Number(pd.full), 0, 1), x: 0, y: 0
+        });
+        p.x = clamp(Number(pd.nx) || 0.5, 0.04, 0.96);
+        p.y = clamp(Number(pd.ny) || 0.5, 0.06, 0.94);
+        t.pets.push(p);
+      });
+      (td.decor || []).forEach(dd => {
+        if (!DECOR[dd.key]) return;
+        const d = makeDecor(dd.key, 0, { id: dd.id, flip: dd.flip, seed: dd.seed, scale: dd.sc });
+        d.x = clamp(Number(dd.nx) || 0.5, 0.04, 0.96);
+        t.decor.push(d);
+      });
+      state.tanks[key] = t;
+    }
+
+    if (!state.tanks.tropical) state.tanks.tropical = makeTank("tropical", "はじめての水槽");
+    state.current = state.tanks[data.current] ? data.current : "tropical";
+    tank = state.tanks[state.current];
+    denormTank(tank);
+
     const elapsed = clamp((Date.now() - (Number(data.savedAt) || Date.now())) / 1000, 0, 12 * 3600);
     if (elapsed > 20) tickEconomy(elapsed, true);
     return true;
@@ -1311,7 +1653,7 @@
 
   // garden eels look best spaced out, so a new one picks the emptiest patch of sand
   function freeEelX() {
-    const eels = state.pets.filter(p => SPECIES[p.key].kind === "eel");
+    const eels = tank.pets.filter(p => SPECIES[p.key].kind === "eel");
     if (!eels.length) return rnd(W * 0.15, W * 0.85);
     let bestX = W * 0.5, bestD = -1;
     for (let i = 0; i < 30; i++) {
@@ -1354,46 +1696,96 @@
    * economy
    * ------------------------------------------------------------------ */
 
-  function coinRate() {                       // coins per minute
-    let sum = 0;
-    for (const p of state.pets) sum += SPECIES[p.key].rate;
-    return sum * happiness();
-  }
-
-  function happiness() {
-    if (!state.pets.length) return 0;
+  function moodOf(t) {
+    if (!t.pets.length) return 0;
     let avg = 0;
-    for (const p of state.pets) avg += p.full;
-    avg /= state.pets.length;
-    return clamp(avg * 0.72 + (1 - state.dirt) * 0.28, 0, 1);
+    for (const p of t.pets) avg += p.full;
+    avg /= t.pets.length;
+    return clamp(avg * 0.72 + (1 - t.dirt) * 0.28, 0, 1);
   }
 
-  function cleanPower() {
+  function rateOf(t) {                        // coins per minute from one tank
+    let sum = 0;
+    for (const p of t.pets) sum += SPECIES[p.key].rate;
+    return sum * moodOf(t);
+  }
+
+  function cleanPowerOf(t) {
     let c = 0;
-    for (const p of state.pets) c += SPECIES[p.key].clean || 0;
-    for (const d of state.decor) c += DECOR[d.key].clean || 0;
+    for (const p of t.pets) c += SPECIES[p.key].clean || 0;
+    for (const d of t.decor) c += DECOR[d.key].clean || 0;
     return c;
+  }
+
+  function totalRate() {
+    let r = 0;
+    for (const key in state.tanks) r += rateOf(state.tanks[key]);
+    return r;
+  }
+
+  function needsCare(t) {
+    return t.dirt > 0.55 || t.pets.some(p => p.full < 0.25);
+  }
+
+  const happiness = () => moodOf(tank);
+  const coinRate = () => rateOf(tank);
+
+  function unlockSpecies(key) {
+    if (state.dex.unlocked[key]) return;
+    state.dex.unlocked[key] = true;
+    toast(SPECIES[key].name + "が 解放された");
+    if (shopSheet.classList.contains("is-open")) renderShop();
+  }
+
+  function unlockProgress(key) {
+    const u = UNLOCKS[key];
+    if (!u) return 1;
+    if (state.dex.unlocked[key]) return 1;
+    if (!u.need) {
+      const t = state.tanks[HOME[key]];
+      return t && u.holds(t) ? 1 : 0;
+    }
+    return clamp((state.dex.prog[key] || 0) / u.need, 0, 1);
+  }
+
+  function tickUnlocks(dt) {
+    for (const key in UNLOCKS) {
+      if (state.dex.unlocked[key]) continue;
+      const home = state.tanks[HOME[key]];
+      if (!home) continue;
+      const u = UNLOCKS[key];
+      if (!u.holds(home)) continue;
+      if (!u.need) { unlockSpecies(key); continue; }
+      state.dex.prog[key] = (state.dex.prog[key] || 0) + dt;
+      if (state.dex.prog[key] >= u.need) unlockSpecies(key);
+    }
   }
 
   function tickEconomy(dt, offline) {
     const hungerRate = 1 / (5 * 3600);
-    for (const p of state.pets) {
-      let full = p.full - hungerRate * dt;
-      // Cleaners graze on algae and biofilm rather than waiting for pellets,
-      // and they eat better the dirtier the tank is.
-      const clean = SPECIES[p.key].clean;
-      if (clean) full += clean * (0.55 + state.dirt * 1.1) / 3600 * dt;
-      p.full = clamp(full, 0, 1);
+    let earned = 0;
+
+    for (const key in state.tanks) {
+      const t = state.tanks[key];
+      for (const p of t.pets) {
+        let full = p.full - hungerRate * dt;
+        // Cleaners graze on algae and biofilm rather than waiting for pellets,
+        // and they eat better the dirtier the tank is.
+        const clean = SPECIES[p.key].clean;
+        if (clean) full += clean * (0.55 + t.dirt * 1.1) / 3600 * dt;
+        p.full = clamp(full, 0, 1);
+      }
+      const load = t.pets.length * 0.0000055 * (t.night ? 0.5 : 1);
+      const scrub = cleanPowerOf(t) * 0.0000042;
+      t.dirt = clamp(t.dirt + (load - scrub) * dt, 0, 1);
+      earned += rateOf(t) / 60 * dt;
     }
 
-    const load = state.pets.length * 0.0000055 * (state.night ? 0.5 : 1);
-    const scrub = cleanPower() * 0.0000042;
-    state.dirt = clamp(state.dirt + (load - scrub) * dt, 0, 1);
+    state.coins += earned;
+    tickUnlocks(dt);
 
-    state.coins += coinRate() / 60 * dt;
-
-    if (offline && state.coins > 0) {
-      const got = Math.floor(coinRate() / 60 * dt);
+    if (offline) {
+      const got = Math.floor(earned);
       if (got > 3) setTimeout(() => toast("るすばん中に " + got + " コインたまった"), 500);
     }
   }
@@ -1417,7 +1809,7 @@
     const px = petPx(p);
     const top = waterTop() + px * 0.6;
     const floor = sandTop() - px * 0.18;
-    const slow = state.night ? 0.45 : 1;
+    const slow = tank.night ? 0.45 : 1;
 
     if (s.kind === "snail") {
       p.steerT -= dt;
@@ -1511,15 +1903,15 @@
   function updateEel(p, dt, px) {
     p.x = clamp(p.x, px * 0.3, W - px * 0.3);
     p.y = sandBase(p.x);
-    p.phase += dt * (state.night ? 0.5 : 1.05);
+    p.phase += dt * (tank.night ? 0.5 : 1.05);
     if (p.shy > 0) p.shy -= dt;
 
     let target = 1;
-    if (state.night) target = 0.1;
+    if (tank.night) target = 0.1;
     if (p.shy > 0) target = Math.min(target, 0.14);
 
     // a fish swimming right past makes them shrink back a little
-    for (const o of state.pets) {
+    for (const o of tank.pets) {
       if (o === p || SPECIES[o.key].kind !== "fish") continue;
       const oL = petPx(o);
       if (oL < px * 0.5) continue;
@@ -1583,7 +1975,7 @@
         f.rest += dt;
         if (f.rest > 26) {
           state.food.splice(i, 1);
-          state.dirt = clamp(state.dirt + 0.012, 0, 1);
+          tank.dirt = clamp(tank.dirt + 0.012, 0, 1);
         }
       }
     }
@@ -1612,7 +2004,7 @@
 
     // Bubbles: every airstone gets its own budget. A single shared cap would let
     // whichever stone comes first in the list grab each freed slot.
-    const stones = state.decor.filter(d => d.key === "airstone");
+    const stones = tank.decor.filter(d => d.key === "airstone");
     updateAmbient.acc = (updateAmbient.acc || 0) + dt;
     if (updateAmbient.acc > 0.09) {
       updateAmbient.acc = 0;
@@ -1679,6 +2071,11 @@
       g.moveTo(0, 0);
       g.lineTo(-L * 0.30, -Hh * 0.72);
       g.quadraticCurveTo(-L * 0.16, 0, -L * 0.30, Hh * 0.72);
+      g.closePath();
+    } else if (s.tail === "fan") {
+      g.moveTo(0, -Hh * 0.16);
+      g.quadraticCurveTo(-L * 0.26, -Hh * 0.7, -L * 0.34, 0);
+      g.quadraticCurveTo(-L * 0.26, Hh * 0.7, 0, Hh * 0.16);
       g.closePath();
     } else if (s.tail === "veil") {
       g.moveTo(0, 0);
@@ -1750,6 +2147,33 @@
         g.fillRect(-L * 0.06, -Hh * 0.62, L * 0.12, Hh * 1.24);
         g.restore();
       }
+    } else if (s.mark === "tanago") {
+      const belly = g.createLinearGradient(0, 0, 0, Hh * 0.6);
+      belly.addColorStop(0, "rgba(233,140,96,0)");
+      belly.addColorStop(1, "rgba(233,126,86,.62)");
+      g.fillStyle = belly;
+      g.fillRect(-L * 0.5, 0, L, Hh * 0.6);
+      g.fillStyle = "rgba(64,206,190,.75)";
+      g.fillRect(-L * 0.42, -Hh * 0.06, L * 0.5, Hh * 0.13);
+      g.fillStyle = "rgba(255,255,255,.4)";
+      g.fillRect(-L * 0.42, -Hh * 0.2, L * 0.5, Hh * 0.06);
+    } else if (s.mark === "oikawa") {
+      g.globalAlpha *= 0.62;
+      for (let i = -2; i <= 2; i++) {
+        g.fillStyle = i % 2 ? "#6fbf9a" : "#e8749f";
+        g.save();
+        g.translate(L * 0.04 + i * L * 0.15, 0);
+        g.rotate(0.16);
+        g.fillRect(-L * 0.035, -Hh * 0.6, L * 0.07, Hh * 1.2);
+        g.restore();
+      }
+      g.globalAlpha /= 0.62;
+      const sheen2 = g.createLinearGradient(0, -Hh * 0.5, 0, Hh * 0.5);
+      sheen2.addColorStop(0, "rgba(255,255,255,.35)");
+      sheen2.addColorStop(0.5, "rgba(255,255,255,0)");
+      sheen2.addColorStop(1, "rgba(232,116,159,.3)");
+      g.fillStyle = sheen2;
+      g.fill(body);
     } else if (s.mark === "spots") {
       const r = mulberry32(4242);
       g.fillStyle = "rgba(60,40,20,.34)";
@@ -1777,6 +2201,19 @@
     g.ellipse(-L * 0.07, 0, L * 0.10, Hh * 0.14, 0.4, 0, 7);
     g.fill();
     g.restore();
+
+    // ---- barbels ----
+    if (s.whisker) {
+      g.strokeStyle = "rgba(120,104,78,.85)";
+      g.lineWidth = Math.max(0.6, L * 0.016);
+      g.lineCap = "round";
+      for (const k of [-1, -0.35, 0.35]) {
+        g.beginPath();
+        g.moveTo(L * 0.44, Hh * 0.1);
+        g.quadraticCurveTo(L * 0.6, Hh * (0.2 + k * 0.35), L * 0.72, Hh * (0.5 + k * 0.6));
+        g.stroke();
+      }
+    }
 
     // ---- eye ----
     g.fillStyle = "#f6fbfb";
@@ -1829,6 +2266,18 @@
       g.moveTo(bx, -L * 0.24 + i * L * 0.02);
       g.quadraticCurveTo(bx - L * 0.04, 0, bx - L * 0.02, L * 0.14);
       g.stroke();
+    }
+
+    if (s.striped) {
+      g.strokeStyle = "rgba(46,54,48,.42)";
+      g.lineWidth = Math.max(0.5, L * 0.026);
+      for (let i = 0; i < 4; i++) {
+        const bx = L * 0.24 - i * L * 0.14;
+        g.beginPath();
+        g.moveTo(bx + L * 0.04, -L * 0.2);
+        g.lineTo(bx - L * 0.05, L * 0.12);
+        g.stroke();
+      }
     }
 
     if (s.banded) {
@@ -2190,7 +2639,7 @@
     g.stroke();
   }
 
-  const SOLID_DECOR = { rock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1, shell: 1 };
+  const SOLID_DECOR = { rock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1, shell: 1, bamboo: 1 };
 
   function drawDecor(g, d, baseY, sizeOverride) {
     const s = sizeOverride || decorPx(d);
@@ -2436,7 +2885,7 @@
         }
 
         // sand heaped where the trunk goes under
-        const sandTone = state.night ? "158,145,116" : "234,216,178";
+        const sandTone = BIOMES[tank.biome].mound[tank.night ? 1 : 0];
         const mound = g.createRadialGradient(-s * 0.44, s * 0.01, s * 0.02, -s * 0.44, s * 0.01, s * 0.2);
         mound.addColorStop(0, "rgba(" + sandTone + ",.92)");
         mound.addColorStop(0.55, "rgba(" + sandTone + ",.8)");
@@ -2509,6 +2958,84 @@
           g.arc(t[0], t[1], t[2] * 0.78, 0, 7);
           g.fill();
         }
+        break;
+      }
+      case "leaves": {
+        const tones = ["#9d6a33", "#b5813c", "#7d5228", "#a97c46", "#8b5f2c"];
+        const leaf = (lx, ly, ang, len, wid, col) => {
+          g.save();
+          g.translate(lx, ly);
+          g.rotate(ang);
+          g.fillStyle = col;
+          g.beginPath();
+          g.moveTo(-len / 2, 0);
+          g.quadraticCurveTo(0, -wid, len / 2, 0);
+          g.quadraticCurveTo(0, wid, -len / 2, 0);
+          g.fill();
+          g.strokeStyle = "rgba(66,44,22,.4)";
+          g.lineWidth = Math.max(0.5, len * 0.035);
+          g.beginPath();
+          g.moveTo(-len / 2, 0);
+          g.quadraticCurveTo(0, -wid * 0.15, len / 2, 0);
+          g.stroke();
+          g.restore();
+        };
+        for (let i = 0; i < 9; i++) {
+          const lx = (r() - 0.5) * s * 0.9;
+          const ly = -r() * s * 0.11;
+          leaf(lx, ly, (r() - 0.5) * 1.3, s * (0.24 + r() * 0.14), s * (0.09 + r() * 0.06),
+               tones[Math.floor(r() * tones.length)]);
+        }
+        break;
+      }
+      case "bamboo": {
+        const len = s * 0.92, rad = s * 0.17;
+        g.save();
+        g.rotate(-0.06);
+        const grad = g.createLinearGradient(0, -rad * 2, 0, 0);
+        grad.addColorStop(0, "#d3cb8f");
+        grad.addColorStop(0.5, "#a9a45f");
+        grad.addColorStop(1, "#6e6b39");
+        g.fillStyle = grad;
+        g.beginPath();
+        if (g.roundRect) g.roundRect(-len / 2, -rad * 2, len, rad * 2, rad * 0.35);
+        else g.rect(-len / 2, -rad * 2, len, rad * 2);
+        g.fill();
+
+        // node rings
+        g.strokeStyle = "rgba(84,80,40,.75)";
+        g.lineWidth = Math.max(1, s * 0.022);
+        for (const f of [-0.16, 0.3]) {
+          g.beginPath();
+          g.moveTo(len * f, -rad * 2);
+          g.lineTo(len * f, 0);
+          g.stroke();
+          g.strokeStyle = "rgba(226,220,168,.5)";
+          g.beginPath();
+          g.moveTo(len * f + s * 0.022, -rad * 2);
+          g.lineTo(len * f + s * 0.022, 0);
+          g.stroke();
+          g.strokeStyle = "rgba(84,80,40,.75)";
+        }
+
+        // hollow end, the part fish actually use
+        g.fillStyle = "#3b3a22";
+        g.beginPath();
+        g.ellipse(-len / 2, -rad, rad * 0.42, rad, 0, 0, 7);
+        g.fill();
+        g.strokeStyle = "#cfc88b";
+        g.lineWidth = Math.max(0.8, s * 0.018);
+        g.stroke();
+
+        // weathering
+        g.fillStyle = "rgba(96,132,74,.28)";
+        for (let i = 0; i < 6; i++) {
+          g.beginPath();
+          g.ellipse(-len / 2 + r() * len, -rad * 2 + r() * rad * 1.9,
+                    s * (0.03 + r() * 0.04), s * 0.018, (r() - 0.5), 0, 7);
+          g.fill();
+        }
+        g.restore();
         break;
       }
       case "airstone": {
@@ -2594,27 +3121,23 @@
   function drawScene() {
     const g = ctx;
     const wt = waterTop(), st = sandTop();
-    const night = state.night;
+    const night = tank.night;
 
     g.clearRect(0, 0, W, H);
 
     // water
     const water = g.createLinearGradient(0, 0, 0, H);
-    if (night) {
-      water.addColorStop(0, "#0a2c3a");
-      water.addColorStop(0.5, "#072430");
-      water.addColorStop(1, "#04171f");
-    } else {
-      water.addColorStop(0, "#1a7f97");
-      water.addColorStop(0.45, "#0b566d");
-      water.addColorStop(1, "#052d3c");
-    }
+    const bio = BIOMES[tank.biome];
+    const wc = night ? bio.waterNight : bio.water;
+    water.addColorStop(0, wc[0]);
+    water.addColorStop(night ? 0.5 : 0.45, wc[1]);
+    water.addColorStop(1, wc[2]);
     g.fillStyle = water;
     g.fillRect(0, 0, W, H);
 
     // algae tint
-    if (state.dirt > 0.05) {
-      g.fillStyle = "rgba(96,140,64," + (state.dirt * 0.24).toFixed(3) + ")";
+    if (tank.dirt > 0.05) {
+      g.fillStyle = "rgba(96,140,64," + (tank.dirt * 0.24).toFixed(3) + ")";
       g.fillRect(0, 0, W, H);
     }
 
@@ -2628,9 +3151,9 @@
         const w = W * rayW[i];
         const a = 0.055 + rayW[i] * 1.1;
         const grd = g.createLinearGradient(0, wt, 0, st * 0.96);
-        grd.addColorStop(0, "rgba(178,238,255," + a.toFixed(3) + ")");
-        grd.addColorStop(0.55, "rgba(178,238,255," + (a * 0.4).toFixed(3) + ")");
-        grd.addColorStop(1, "rgba(178,238,255,0)");
+        grd.addColorStop(0, "rgba(" + bio.ray + "," + a.toFixed(3) + ")");
+        grd.addColorStop(0.55, "rgba(" + bio.ray + "," + (a * 0.4).toFixed(3) + ")");
+        grd.addColorStop(1, "rgba(" + bio.ray + ",0)");
         g.fillStyle = grd;
         g.beginPath();
         g.moveTo(x - w * 0.3, wt);
@@ -2645,8 +3168,9 @@
 
     // sand
     const sand = g.createLinearGradient(0, st - 6, 0, H);
-    if (night) { sand.addColorStop(0, "#9d906f"); sand.addColorStop(1, "#5c5340"); }
-    else { sand.addColorStop(0, "#ecdcb6"); sand.addColorStop(1, "#a8946f"); }
+    const sc = night ? bio.sandNight : bio.sand;
+    sand.addColorStop(0, sc[0]);
+    sand.addColorStop(1, sc[1]);
     g.fillStyle = sand;
     g.beginPath();
     g.moveTo(0, st + 6);
@@ -2658,13 +3182,13 @@
     g.fill();
 
     // pebbles
-    const pr = mulberry32(state.seed);
+    const pr = mulberry32(tank.seed);
     g.globalAlpha = night ? 0.3 : 0.45;
     for (let i = 0; i < 42; i++) {
       const x = pr() * W;
       const y = st + 6 + pr() * (H - st - 8);
       const rr = 1 + pr() * 2.6;
-      g.fillStyle = pr() > 0.5 ? "#c6b189" : "#8d7f61";
+      g.fillStyle = pr() > 0.5 ? bio.pebble[0] : bio.pebble[1];
       g.beginPath();
       g.ellipse(x, y, rr, rr * 0.72, 0, 0, 7);
       g.fill();
@@ -2675,7 +3199,7 @@
     if (!night) {
       g.save();
       g.globalCompositeOperation = "lighter";
-      const cr = mulberry32(state.seed + 31);
+      const cr = mulberry32(tank.seed + 31);
       g.lineCap = "round";
       for (let i = 0; i < 22; i++) {
         const cx = cr() * W;
@@ -2698,7 +3222,7 @@
     }
 
     // decor sits on the sand line
-    for (const d of state.decor) drawDecor(g, d, sandBase(d.x));
+    for (const d of tank.decor) drawDecor(g, d, sandBase(d.x));
 
     // food
     g.fillStyle = night ? "#b08a4e" : "#e0a94f";
@@ -2709,12 +3233,12 @@
     }
 
     // creatures: bottom dwellers first so fish pass in front
-    for (const p of state.pets) if (SPECIES[p.key].kind === "eel") drawPet(g, p);
-    for (const p of state.pets) {
+    for (const p of tank.pets) if (SPECIES[p.key].kind === "eel") drawPet(g, p);
+    for (const p of tank.pets) {
       const k = SPECIES[p.key].kind;
       if (k !== "fish" && k !== "eel") drawPet(g, p);
     }
-    for (const p of state.pets) if (SPECIES[p.key].kind === "fish") drawPet(g, p);
+    for (const p of tank.pets) if (SPECIES[p.key].kind === "fish") drawPet(g, p);
 
     // sparks
     for (const s of sparks) {
@@ -2736,9 +3260,9 @@
     }
 
     // floating grime
-    if (state.dirt > 0.25) {
-      const dr = mulberry32(state.seed + 7);
-      const n = Math.floor(state.dirt * 40);
+    if (tank.dirt > 0.25) {
+      const dr = mulberry32(tank.seed + 7);
+      const n = Math.floor(tank.dirt * 40);
       g.fillStyle = "rgba(150,175,110,.42)";
       for (let i = 0; i < n; i++) {
         const bx = dr() * W;
@@ -2872,8 +3396,8 @@
     canvas.height = Math.round(nh * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    for (const p of state.pets) { p.x *= sx; p.y *= sy; }
-    for (const d of state.decor) d.x *= sx;
+    for (const p of tank.pets) { p.x *= sx; p.y *= sy; }
+    for (const d of tank.decor) d.x *= sx;
     for (const f of state.food) { f.x *= sx; f.y *= sy; }
     for (const b of bubbles) { b.x *= sx; b.y *= sy; }
 
@@ -2887,7 +3411,7 @@
     time += dt;
 
     tickEconomy(dt, false);
-    for (const p of state.pets) updatePet(p, dt);
+    for (const p of tank.pets) updatePet(p, dt);
     updateFood(dt);
     updateAmbient(dt);
     drawScene();
@@ -2910,12 +3434,13 @@
   function syncHud() {
     el.coins.textContent = Math.floor(state.coins);
     el.shopCoins.textContent = Math.floor(state.coins);
-    el.rate.textContent = "+" + coinRate().toFixed(1) + "/分";
-    el.pop.textContent = state.pets.length + "/" + CAPACITY;
-    const q = Math.round((1 - state.dirt) * 100);
+    el.rate.textContent = "+" + totalRate().toFixed(1) + "/分";
+    el.pop.textContent = tank.pets.length + "/" + CAPACITY;
+    const q = Math.round((1 - tank.dirt) * 100);
     el.waterGauge.firstElementChild.style.width = q + "%";
     el.waterGauge.classList.toggle("is-low", q < 60);
     el.waterGauge.classList.toggle("is-bad", q < 30);
+    syncCareDot();
     if (selected && selected.type === "pet") refreshCardMeter();
     if (roster.classList.contains("is-open")) {
       const key = census().map(gr => gr.key + gr.n).join(",");
@@ -2936,7 +3461,7 @@
 
   function census() {
     const groups = new Map();
-    for (const p of state.pets) {
+    for (const p of tank.pets) {
       let gr = groups.get(p.key);
       if (!gr) { gr = { key: p.key, n: 0, full: 0, hungry: 0 }; groups.set(p.key, gr); }
       gr.n++;
@@ -3015,9 +3540,9 @@
       const el = document.getElementById(id);
       if (el) el.textContent = v;
     };
-    setText("rosterCount", state.pets.length + " / " + CAPACITY);
+    setText("rosterCount", tank.pets.length + " / " + CAPACITY);
     setText("rosterRate", "+" + coinRate().toFixed(1));
-    setText("rosterWater", Math.round((1 - state.dirt) * 100) + "%");
+    setText("rosterWater", Math.round((1 - tank.dirt) * 100) + "%");
     setText("rosterMood", Math.round(happiness() * 100) + "%");
 
     for (const row of rosterRows) {
@@ -3072,7 +3597,7 @@
 
   function hitPet(x, y) {
     let best = null, bd = Infinity;
-    for (const p of state.pets) {
+    for (const p of tank.pets) {
       const L = petPx(p);
       if (SPECIES[p.key].kind === "eel") {
         const top = p.y - L * p.ext - L * 0.1;
@@ -3090,7 +3615,7 @@
   function hitDecor(x, y) {
     const st = sandTop();
     let best = null, bd = Infinity;
-    for (const d of state.decor) {
+    for (const d of tank.decor) {
       const s = decorPx(d);
       if (y < st - s * 1.1 || y > st + s * 0.4) continue;
       const dx = Math.abs(x - d.x);
@@ -3216,7 +3741,7 @@
   }
 
   document.getElementById("feedBtn").addEventListener("click", () => {
-    if (!state.pets.length) { toast("まずはショップで魚をむかえよう"); return; }
+    if (!tank.pets.length) { toast("まずはショップで魚をむかえよう"); return; }
     if (feedMode) { setFeedMode(false); return; }
     setFeedMode(true);
     // Take the tub out, but do not tip it: where the food goes is the player's call.
@@ -3233,8 +3758,8 @@
   /* ---- clean ---- */
 
   document.getElementById("cleanBtn").addEventListener("click", () => {
-    if (state.dirt < 0.02) { toast("水はもう澄んでいる"); return; }
-    state.dirt = 0;
+    if (tank.dirt < 0.02) { toast("水はもう澄んでいる"); return; }
+    tank.dirt = 0;
     cleanFlash = 0.9;
     toast("水がすっきりした");
     syncHud();
@@ -3244,9 +3769,9 @@
   /* ---- light ---- */
 
   document.getElementById("lightBtn").addEventListener("click", () => {
-    state.night = !state.night;
-    document.getElementById("room").classList.toggle("is-night", state.night);
-    toast(state.night ? "おやすみモード" : "あかりをつけた");
+    tank.night = !tank.night;
+    document.getElementById("room").classList.toggle("is-night", tank.night);
+    toast(tank.night ? "おやすみモード" : "あかりをつけた");
     save();
   });
 
@@ -3261,6 +3786,8 @@
     setFeedMode(false);
     shopSheet.classList.remove("is-open");
     menuSheet.classList.remove("is-open");
+    tanksSheet.classList.remove("is-open");
+    dexSheet.classList.remove("is-open");
     sheet.classList.add("is-open");
     scrim.classList.add("is-open");
     syncHud();
@@ -3268,6 +3795,8 @@
   function closeSheets() {
     shopSheet.classList.remove("is-open");
     menuSheet.classList.remove("is-open");
+    tanksSheet.classList.remove("is-open");
+    dexSheet.classList.remove("is-open");
     scrim.classList.remove("is-open");
   }
 
@@ -3276,6 +3805,77 @@
   document.getElementById("shopClose").addEventListener("click", closeSheets);
   document.getElementById("menuBtn").addEventListener("click", () => openSheet(menuSheet));
   document.getElementById("menuClose").addEventListener("click", closeSheets);
+
+  const dexSheet = document.getElementById("dex");
+
+  function renderDex() {
+    const box = document.getElementById("dexList");
+    box.innerHTML = "";
+
+    let have = 0, total = 0;
+    const alive = {};
+    for (const key in state.tanks) {
+      for (const p of state.tanks[key].pets) alive[p.key] = (alive[p.key] || 0) + 1;
+    }
+
+    for (const biome of BIOME_KEYS) {
+      const keys = Object.keys(SPECIES).filter(k => HOME[k] === biome || (biome === BIOME_KEYS[0] && HOME[k] === "both"));
+      if (!keys.length) continue;
+
+      const head = document.createElement("div");
+      head.className = "dex-group";
+      head.textContent = BIOMES[biome].name;
+      box.appendChild(head);
+
+      for (const key of keys) {
+        const sp = SPECIES[key];
+        const locked = isLocked(key);
+        total++;
+        if (!locked) have++;
+
+        const row = document.createElement("div");
+        row.className = "rrow dex-row" + (locked ? " is-locked" : "");
+        const cv = document.createElement("canvas");
+        const body = document.createElement("div");
+
+        const top = document.createElement("div");
+        top.className = "rrow-top";
+        const n = alive[key] || 0;
+        top.innerHTML = "<span>" + (locked ? "？？？" : sp.name) + "</span>"
+          + (n ? '<span class="n">&times;' + n + "</span>" : "")
+          + '<span class="rate">' + (locked ? "未解放" : n ? "飼育中" : "解放ずみ") + "</span>";
+
+        const bot = document.createElement("div");
+        bot.className = "rrow-bot";
+        if (locked) {
+          const u = UNLOCKS[key];
+          const hint = document.createElement("span");
+          hint.className = "hint";
+          hint.textContent = u.hint + (u.need ? "（" + Math.round(unlockProgress(key) * 100) + "%）" : "");
+          bot.appendChild(hint);
+        } else {
+          const note = document.createElement("span");
+          note.style.cssText = "white-space:normal;line-height:1.4";
+          note.textContent = sp.note;
+          bot.appendChild(note);
+        }
+
+        body.append(top, bot);
+        row.append(cv, body);
+        box.appendChild(row);
+        if (!locked) requestAnimationFrame(() => drawPreview(cv, key));
+        else requestAnimationFrame(() => drawPreview(cv, key));
+      }
+    }
+
+    document.getElementById("dexCount").textContent = have + " / " + total + " 種";
+  }
+
+  document.getElementById("dexBtn").addEventListener("click", () => {
+    renderDex();
+    openSheet(dexSheet);
+  });
+  document.getElementById("dexClose").addEventListener("click", closeSheets);
 
   document.getElementById("howBtn").addEventListener("click", () => {
     closeSheets();
@@ -3287,6 +3887,115 @@
     try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
     location.reload();
   });
+
+  /* ---- tanks ---- */
+
+  const tanksSheet = document.getElementById("tanks");
+  const biomeLabel = document.getElementById("biomeLabel");
+  const careDot = document.getElementById("careDot");
+
+  function syncCareDot() {
+    let alert = false;
+    for (const key in state.tanks) {
+      if (key !== state.current && needsCare(state.tanks[key])) alert = true;
+    }
+    careDot.classList.toggle("is-on", alert);
+  }
+
+  function syncTankChrome() {
+    el.tankName.value = tank.name;
+    biomeLabel.textContent = BIOMES[tank.biome].short;
+    document.getElementById("room").classList.toggle("is-night", tank.night);
+    syncCareDot();
+  }
+
+  function useTank(key) {
+    if (!state.tanks[key] || key === state.current) return;
+    normTank(tank);
+    state.current = key;
+    tank = state.tanks[key];
+    denormTank(tank);
+    state.food.length = 0;
+    bubbles.length = 0;
+    sparks.length = 0;
+    closeCard();
+    setFeedMode(false);
+    syncTankChrome();
+    syncHud();
+    save();
+  }
+
+  function buyTank(key) {
+    const b = BIOMES[key];
+    if (!b || state.tanks[key]) return;
+    if (state.coins < b.price) { toast("コインが足りない"); return; }
+    state.coins -= b.price;
+    state.tanks[key] = makeTank(key);
+    useTank(key);
+    tank.decor.push(makeDecor("plant", W * rnd(0.15, 0.3), {}));
+    toast(b.name + "を用意した");
+    closeSheets();
+    save();
+  }
+
+  function renderTanks() {
+    const box = document.getElementById("tankList");
+    box.innerHTML = "";
+    document.getElementById("tanksCoins").textContent = Math.floor(state.coins);
+
+    for (const key of BIOME_KEYS) {
+      const b = BIOMES[key];
+      const t = state.tanks[key];
+      const row = document.createElement("button");
+      row.className = "tank-row";
+
+      const body = document.createElement("div");
+      const eyebrow = document.createElement("div");
+      eyebrow.className = "tank-biome";
+      eyebrow.textContent = b.name;
+      const title = document.createElement("div");
+      title.className = "tank-name";
+      const meta = document.createElement("div");
+      meta.className = "tank-meta";
+
+      const tag = document.createElement("span");
+      tag.className = "tank-tag";
+
+      if (t) {
+        title.textContent = t.name;
+        const care = needsCare(t);
+        meta.innerHTML = "住人 " + t.pets.length + "／水質 " + Math.round((1 - t.dirt) * 100)
+          + "%／毎分 +" + rateOf(t).toFixed(1)
+          + (care ? ' <span class="care">・世話が必要</span>' : "");
+        if (key === state.current) {
+          row.classList.add("is-current");
+          tag.classList.add("is-now");
+          tag.textContent = "表示中";
+          row.disabled = true;
+        } else {
+          tag.textContent = "見る";
+          row.addEventListener("click", () => { useTank(key); renderTanks(); });
+        }
+      } else {
+        title.textContent = b.name;
+        meta.textContent = b.note;
+        tag.classList.add("is-buy");
+        tag.textContent = b.price + " コイン";
+        if (state.coins < b.price) row.disabled = true;
+        else row.addEventListener("click", () => buyTank(key));
+      }
+
+      body.append(eyebrow, title, meta);
+      row.append(body, tag);
+      box.appendChild(row);
+    }
+  }
+
+  document.getElementById("tankBtn").addEventListener("click", () => {
+    renderTanks();
+    openSheet(tanksSheet);
+  });
+  document.getElementById("tanksClose").addEventListener("click", closeSheets);
 
   /* ---- shop ---- */
 
@@ -3301,15 +4010,20 @@
   });
 
   function shopItems() {
+    const biome = tank.biome;
     if (shopTab === "decor") {
-      return Object.keys(DECOR).map(k => ({ key: k, ...DECOR[k], group: "decor" }));
+      return Object.keys(DECOR)
+        .filter(k => inBiome(k, biome))
+        .map(k => ({ key: k, ...DECOR[k], group: "decor" }));
     }
     const wantFish = shopTab === "fish";
     const onFishTab = k => SPECIES[k].kind === "fish" || SPECIES[k].kind === "eel";
     return Object.keys(SPECIES)
-      .filter(k => onFishTab(k) === wantFish)
+      .filter(k => inBiome(k, biome) && onFishTab(k) === wantFish)
       .map(k => ({ key: k, ...SPECIES[k], group: "pet" }));
   }
+
+  const isLocked = key => !!UNLOCKS[key] && !state.dex.unlocked[key];
 
   function renderShop() {
     const box = document.getElementById("goods");
@@ -3317,43 +4031,65 @@
     for (const it of shopItems()) {
       const btn = document.createElement("button");
       btn.className = "good";
+      const locked = it.group === "pet" && isLocked(it.key);
       const afford = state.coins >= it.price;
-      const roomLeft = it.group === "pet" ? state.pets.length < CAPACITY : state.decor.length < DECOR_CAP;
-      btn.disabled = !afford || !roomLeft;
+      const roomLeft = it.group === "pet" ? tank.pets.length < CAPACITY : tank.decor.length < DECOR_CAP;
+      btn.disabled = locked || !afford || !roomLeft;
 
       const cv = document.createElement("canvas");
       const name = document.createElement("span");
       name.className = "good-name";
-      name.textContent = it.name;
-      const note = document.createElement("span");
-      note.className = "good-note";
-      note.textContent = it.note + (it.rate ? "  毎分+" + it.rate.toFixed(1) : "");
-      const price = document.createElement("span");
-      price.className = "good-price";
-      const dot = document.createElement("span");
-      dot.className = "coin-dot";
-      price.appendChild(dot);
-      price.appendChild(document.createTextNode(String(it.price)));
+      name.textContent = locked ? "？？？" : it.name;
 
-      btn.append(cv, name, note, price);
-      btn.addEventListener("click", () => buy(it));
+      btn.append(cv, name);
+
+      if (locked) {
+        btn.classList.add("is-locked");
+        const u = UNLOCKS[it.key];
+        const lock = document.createElement("span");
+        lock.className = "good-lock";
+        lock.textContent = u.hint;
+        btn.appendChild(lock);
+        if (u.need) {
+          const bar = document.createElement("span");
+          bar.className = "lock-bar";
+          const fill = document.createElement("span");
+          fill.style.width = Math.round(unlockProgress(it.key) * 100) + "%";
+          bar.appendChild(fill);
+          btn.appendChild(bar);
+        }
+      } else {
+        const note = document.createElement("span");
+        note.className = "good-note";
+        note.textContent = it.note + (it.rate ? "  毎分+" + it.rate.toFixed(1) : "");
+        const price = document.createElement("span");
+        price.className = "good-price";
+        const dot = document.createElement("span");
+        dot.className = "coin-dot";
+        price.appendChild(dot);
+        price.appendChild(document.createTextNode(String(it.price)));
+        btn.append(note, price);
+        btn.addEventListener("click", () => buy(it));
+      }
+
       box.appendChild(btn);
       requestAnimationFrame(() => drawPreview(cv, it.key));
     }
   }
 
   function buy(it) {
+    if (it.group === "pet" && isLocked(it.key)) { toast("まだ解放されていない"); return; }
     if (state.coins < it.price) { toast("コインが足りない"); return; }
     if (it.group === "pet") {
-      if (state.pets.length >= CAPACITY) { toast("水槽がいっぱい"); return; }
+      if (tank.pets.length >= CAPACITY) { toast("水槽がいっぱい"); return; }
       state.coins -= it.price;
       const p = makePet(it.key, it.kind === "eel" ? { x: freeEelX() } : {});
-      state.pets.push(p);
+      tank.pets.push(p);
       toast(it.name + "「" + p.name + "」をむかえた");
     } else {
-      if (state.decor.length >= DECOR_CAP) { toast("かざりはこれ以上おけない"); return; }
+      if (tank.decor.length >= DECOR_CAP) { toast("かざりはこれ以上おけない"); return; }
       state.coins -= it.price;
-      state.decor.push(makeDecor(it.key, rnd(W * 0.12, W * 0.88), {}));
+      tank.decor.push(makeDecor(it.key, rnd(W * 0.12, W * 0.88), {}));
       toast(it.name + "をかざった");
     }
     syncHud();
@@ -3376,8 +4112,8 @@
 
   function openCard(type, id) {
     const item = type === "pet"
-      ? state.pets.find(p => p.id === id)
-      : state.decor.find(d => d.id === id);
+      ? tank.pets.find(p => p.id === id)
+      : tank.decor.find(d => d.id === id);
     if (!item) return;
     selected = { type, id };
     closeSheets();
@@ -3410,7 +4146,7 @@
   }
 
   function refreshCardMeter() {
-    const p = state.pets.find(x => x.id === selected.id);
+    const p = tank.pets.find(x => x.id === selected.id);
     if (!p) return;
     const v = Math.round(p.full * 100);
     cardGauge.firstElementChild.style.width = v + "%";
@@ -3427,7 +4163,7 @@
 
   cardSize.addEventListener("input", () => {
     if (!selected || selected.type !== "decor") return;
-    const d = state.decor.find(x => x.id === selected.id);
+    const d = tank.decor.find(x => x.id === selected.id);
     if (!d) return;
     d.scale = clamp(Number(cardSize.value) / 100, DECOR_MIN, DECOR_MAX);
     cardSizeVal.textContent = "\u00d7" + d.scale.toFixed(1);
@@ -3439,25 +4175,25 @@
 
   cardName.addEventListener("input", () => {
     if (!selected || selected.type !== "pet") return;
-    const p = state.pets.find(x => x.id === selected.id);
+    const p = tank.pets.find(x => x.id === selected.id);
     if (p) { p.name = cardName.value.slice(0, 10); save(); }
   });
 
   cardRelease.addEventListener("click", () => {
     if (!selected) return;
     if (selected.type === "pet") {
-      const i = state.pets.findIndex(p => p.id === selected.id);
+      const i = tank.pets.findIndex(p => p.id === selected.id);
       if (i < 0) return;
-      const p = state.pets[i];
+      const p = tank.pets[i];
       state.coins += Math.floor(SPECIES[p.key].price / 2);
-      state.pets.splice(i, 1);
+      tank.pets.splice(i, 1);
       toast("「" + p.name + "」を にがした");
     } else {
-      const i = state.decor.findIndex(d => d.id === selected.id);
+      const i = tank.decor.findIndex(d => d.id === selected.id);
       if (i < 0) return;
-      const d = state.decor[i];
+      const d = tank.decor[i];
       state.coins += Math.floor(DECOR[d.key].price / 2);
-      state.decor.splice(i, 1);
+      tank.decor.splice(i, 1);
       toast(DECOR[d.key].name + "を しまった");
     }
     closeCard();
@@ -3468,7 +4204,7 @@
   /* ---- tank name ---- */
 
   el.tankName.addEventListener("input", () => {
-    state.name = el.tankName.value.slice(0, 14);
+    tank.name = el.tankName.value.slice(0, 14);
     save();
   });
 
@@ -3479,12 +4215,11 @@
   resize();
   const hadSave = load();
   if (!hadSave) {
-    state.pets.push(makePet("medaka", {}));
-    state.decor.push(makeDecor("plant", W * 0.24, {}));
+    tank.pets.push(makePet("medaka", {}));
+    tank.decor.push(makeDecor("plant", W * 0.24, {}));
     setTimeout(() => showHint("魚をタップすると名前をつけられる", 5200), 900);
   }
-  el.tankName.value = state.name;
-  document.getElementById("room").classList.toggle("is-night", state.night);
+  syncTankChrome();
 
   new ResizeObserver(() => resize()).observe(document.getElementById("tankBox"));
   window.addEventListener("beforeunload", save);
