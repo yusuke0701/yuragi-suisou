@@ -1230,7 +1230,7 @@
 (() => {
   "use strict";
 
-  const SAVE_KEY = "yuragi.aquarium.v1";
+  const SAVE_KEY = "yuragi.aquarium.v2";
   const CAPACITY = 16;
   const DECOR_CAP = 10;
   const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1264,7 +1264,7 @@
     eel: {
       kind: "eel", name: "チンアナゴ", price: 95, rate: 1.9, size: 56,
       c1: "#cfc6b2", c2: "#fbf8f0",
-      note: "砂から生えてゆらゆら。本当は海水魚なので、海水編ができたら引っ越す。"
+      note: "砂から生えてゆらゆら。おどろくと引っこむ。"
     },
     goldfish: {
       kind: "fish", name: "金魚", price: 130, rate: 2.3, size: 33, ratio: 0.66,
@@ -1323,26 +1323,72 @@
       kind: "snail", name: "石巻貝", price: 25, rate: 0.3, size: 13,
       c1: "#3d3126", c2: "#c7a878", clean: 0.6,
       note: "ガラスのコケ取り担当。コケが主食なので餌いらず。"
+    },
+    ramshorn: {
+      kind: "snail", name: "ラムズホーン", price: 40, rate: 0.4, size: 14,
+      c1: "#a32a12", c2: "#f28a4c", clean: 0.55,
+      note: "赤い巻貝。よく増える働き者。"
+    },
+
+    /* ---- 日本の海水魚 ---- */
+    deba: {
+      kind: "fish", name: "デバスズメダイ", price: 80, rate: 1.5, size: 21, ratio: 0.52,
+      c1: "#3f8f8a", c2: "#c2f2e4", fin: "#84dcc9", tail: "fork", mark: "sheen",
+      note: "群れると水色の霞のよう。"
+    },
+    ruri: {
+      kind: "fish", name: "ルリスズメダイ", price: 130, rate: 2.0, size: 22, ratio: 0.56,
+      c1: "#12379e", c2: "#63b0ff", fin: "#2f6fe0", tail: "fork", mark: "sheen",
+      note: "光の当たり方で青が変わる。"
+    },
+    clownfish: {
+      kind: "fish", name: "カクレクマノミ", price: 170, rate: 2.3, size: 26, ratio: 0.6,
+      c1: "#d9581a", c2: "#ff9d52", fin: "#c04a17", tail: "fan", mark: "clown", finK: 0.86,
+      note: "イソギンチャクの間から顔を出す。"
+    },
+    hakofugu: {
+      kind: "fish", name: "ミナミハコフグ", price: 280, rate: 3.0, size: 22, ratio: 0.9,
+      c1: "#d6a30c", c2: "#ffe469", fin: "#f0c93f", tail: "fan", mark: "spots", boxy: true,
+      finK: 0.44, spotColor: "rgba(38,28,12,.8)",
+      note: "幼魚は黄色い箱。ふわふわ泳ぐ。"
+    },
+    yadokari: {
+      kind: "snail", name: "ヤドカリ", price: 95, rate: 0.6, size: 21,
+      c1: "#7a5a3a", c2: "#dcc198", clean: 0.5, hermit: true,
+      note: "貝がらを背負って砂を掃除する。"
     }
   };
 
   const DECOR = {
     plant:     { name: "水草",     price: 20,  size: 62, note: "ゆらゆら。魚のかくれ家に。" },
-    shell:     { name: "貝がら",   price: 15,  size: 26, note: "砂の上のささやかな一点。" },
+    shell:     { name: "貝がら",   price: 15,  size: 26, note: "白い砂の上のささやかな一点。" },
     rock:      { name: "岩",       price: 35,  size: 44, note: "レイアウトの土台になる。" },
     marimo:    { name: "マリモ",   price: 55,  size: 30, note: "まるい。ただただ、まるい。" },
     driftwood: { name: "流木",     price: 60,  size: 78, note: "水槽が一気に自然っぽくなる。" },
-    coral:     { name: "サンゴ",   price: 90,  size: 58, note: "枝ぶりが華やか。" },
+    coral:     { name: "サンゴ",   price: 90,  size: 58, note: "枝ぶりが華やか。サンゴ礁の主役。" },
     leaves:    { name: "落ち葉",   price: 30,  size: 50, note: "沈めておくと隠れ家になる。和の一景。" },
     bamboo:    { name: "竹筒",     price: 75,  size: 76, note: "ドジョウが好んで入る。日本の水辺らしさ。" },
     airstone:  { name: "エアストーン", price: 110, size: 22, note: "泡がのぼる。水がすこし澄む。", clean: 0.4 },
-    castle:    { name: "お城",     price: 220, size: 80, note: "水槽の中の小さな城下町。" }
+    castle:    { name: "お城",     price: 220, size: 80, note: "水槽の中の小さな城下町。" },
+    liverock:  { name: "ライブロック", price: 70, size: 46, note: "石灰藻のついた岩。海水の景色の土台。" },
+    anemone:   { name: "イソギンチャク", price: 130, size: 44, note: "ゆらゆら揺れる。クマノミが住みつく。" }
   };
 
   const BIOMES = {
+    japanFresh: {
+      name: "日本の淡水魚", short: "日本淡水", price: 0, order: 0,
+      note: "小川や田んぼの水辺。はじめの水槽。",
+      water: ["#2f8f79", "#136058", "#062f2c"],
+      waterNight: ["#0d302c", "#082523", "#041816"],
+      sand: ["#d6c8a4", "#877b5c"],
+      sandNight: ["#8f8366", "#4f4835"],
+      pebble: ["#b6a887", "#7b7157"],
+      mound: ["214,200,164", "141,130,101"],
+      ray: "198,255,228"
+    },
     tropical: {
-      name: "熱帯魚水槽", short: "熱帯魚", price: 0, order: 0,
-      note: "南米や東南アジアの魚たち。はじめの水槽。",
+      name: "熱帯魚水槽", short: "熱帯魚", price: 1400, order: 1,
+      note: "南米やアマゾンの魚たち。にぎやかで色が濃い。",
       water: ["#1a7f97", "#0b566d", "#052d3c"],
       waterNight: ["#0a2c3a", "#072430", "#04171f"],
       sand: ["#ecdcb6", "#a8946f"],
@@ -1351,44 +1397,51 @@
       mound: ["234,216,178", "158,145,116"],
       ray: "178,238,255"
     },
-    japanFresh: {
-      name: "日本の淡水魚", short: "日本淡水", price: 2600, order: 1,
-      note: "小川や田んぼの水辺。落ち着いた色の魚がそろう。",
-      water: ["#2f8f79", "#136058", "#062f2c"],
-      waterNight: ["#0d302c", "#082523", "#041816"],
-      sand: ["#d6c8a4", "#877b5c"],
-      sandNight: ["#8f8366", "#4f4835"],
-      pebble: ["#b6a887", "#7b7157"],
-      mound: ["214,200,164", "141,130,101"],
-      ray: "198,255,228"
+    marine: {
+      name: "日本の海水魚", short: "海水", price: 4200, order: 2,
+      note: "南の海のサンゴ礁。白い砂と、明るい青。",
+      water: ["#2fa8c6", "#0f7396", "#053f5c"],
+      waterNight: ["#0b3042", "#082635", "#041823"],
+      sand: ["#f7f0dd", "#c3b498"],
+      sandNight: ["#a49c88", "#655f50"],
+      pebble: ["#e2d6ba", "#b3a68c"],
+      mound: ["246,239,220", "164,156,136"],
+      ray: "190,246,255"
     }
   };
 
   const BIOME_KEYS = Object.keys(BIOMES).sort((a, b) => BIOMES[a].order - BIOMES[b].order);
 
-  // where each creature and ornament belongs; "both" shows up in every tank
+  // Where each creature and ornament belongs. "any" shows up everywhere.
   const HOME = {
-    medaka: "both", minami: "both", snail: "both",
-    neon: "tropical", guppy: "tropical", cory: "tropical",
-    betta: "tropical", angel: "tropical", redbee: "tropical", eel: "tropical",
-    goldfish: "japanFresh", yoshinobori: "japanFresh", dojo: "japanFresh",
-    tanago: "japanFresh", oikawa: "japanFresh", sujiebi: "japanFresh",
+    medaka: ["japanFresh"], goldfish: ["japanFresh"], tanago: ["japanFresh"],
+    oikawa: ["japanFresh"], dojo: ["japanFresh"], yoshinobori: ["japanFresh"],
+    minami: ["japanFresh"], sujiebi: ["japanFresh"], snail: ["japanFresh"],
 
-    plant: "both", rock: "both", driftwood: "both", shell: "both", airstone: "both",
-    castle: "tropical", coral: "tropical",
-    marimo: "japanFresh", leaves: "japanFresh", bamboo: "japanFresh"
+    neon: ["tropical"], guppy: ["tropical"], cory: ["tropical"], betta: ["tropical"],
+    angel: ["tropical"], redbee: ["tropical"], ramshorn: ["tropical"],
+
+    deba: ["marine"], ruri: ["marine"], clownfish: ["marine"],
+    hakofugu: ["marine"], eel: ["marine"], yadokari: ["marine"],
+
+    rock: "any", airstone: "any",
+    plant: ["japanFresh", "tropical"], driftwood: ["japanFresh", "tropical"],
+    marimo: ["japanFresh"], leaves: ["japanFresh"], bamboo: ["japanFresh"],
+    castle: ["tropical"],
+    liverock: ["marine"], coral: ["marine"], anemone: ["marine"], shell: ["marine"]
   };
 
-  const inBiome = (key, biome) => HOME[key] === "both" || HOME[key] === biome;
+  const inBiome = (key, biome) => HOME[key] === "any" || HOME[key].indexOf(biome) >= 0;
+  const homeBiome = key => (HOME[key] === "any" ? null : HOME[key][0]);
 
   // species that have to be earned, and what earns them
   const UNLOCKS = {
     sujiebi: {
-      need: 0, hint: "日本の水槽で3種類以上の生きものを飼う",
+      need: 0, hint: "この水槽で3種類以上の生きものを飼う",
       holds: t => new Set(t.pets.map(p => p.key)).size >= 3
     },
     yoshinobori: {
-      need: 0, hint: "日本の水槽に岩と流木をあわせて3つ置く",
+      need: 0, hint: "岩と流木をあわせて3つ置く",
       holds: t => t.decor.filter(d => d.key === "rock" || d.key === "driftwood").length >= 3
     },
     tanago: {
@@ -1399,12 +1452,34 @@
       }
     },
     dojo: {
-      need: 12 * 3600, hint: "日本の水槽の水質を90%以上にたもつ",
+      need: 12 * 3600, hint: "水質を90%以上にたもつ",
       holds: t => t.dirt <= 0.1
     },
     oikawa: {
-      need: 24 * 3600, hint: "日本の水槽のきげんを85%以上にたもつ",
+      need: 24 * 3600, hint: "きげんを85%以上にたもつ",
       holds: t => moodOf(t) >= 0.85
+    },
+
+    betta: {
+      need: 0, hint: "熱帯魚水槽の住人を8匹以上にする",
+      holds: t => t.pets.length >= 8
+    },
+    angel: {
+      need: 12 * 3600, hint: "熱帯魚水槽のきげんを90%以上にたもつ",
+      holds: t => moodOf(t) >= 0.9
+    },
+
+    clownfish: {
+      need: 0, hint: "海水水槽にイソギンチャクを置く",
+      holds: t => t.decor.some(d => d.key === "anemone")
+    },
+    hakofugu: {
+      need: 0, hint: "サンゴかイソギンチャクを3つ置く",
+      holds: t => t.decor.filter(d => d.key === "coral" || d.key === "anemone").length >= 3
+    },
+    yadokari: {
+      need: 12 * 3600, hint: "海水水槽の水質を95%以上にたもつ",
+      holds: t => t.dirt <= 0.05
     }
   };
 
@@ -1433,14 +1508,14 @@
     coins: 150,
     nextId: 1,
     savedAt: Date.now(),
-    current: "tropical",
-    tanks: { tropical: makeTank("tropical", "はじめての水槽") },
+    current: "japanFresh",
+    tanks: { japanFresh: makeTank("japanFresh", "はじめての水槽") },
     dex: { unlocked: {}, prog: {} },
     food: []
   };
 
   // the tank on screen; everything else is kept in normalised coordinates
-  let tank = state.tanks.tropical;
+  let tank = state.tanks.japanFresh;
 
   function denormTank(t) {
     if (t.px) return;
@@ -1549,28 +1624,10 @@
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* private mode */ }
   }
 
-  // v1 held a single tank at the top level; it becomes the tropical tank
-  function migrateV1(d) {
-    return {
-      v: 2,
-      coins: d.coins, nextId: d.nextId, savedAt: d.savedAt,
-      current: "tropical",
-      tanks: {
-        tropical: {
-          name: d.name, dirt: d.dirt, night: d.night, seed: d.seed,
-          pets: d.pets || [], decor: d.decor || []
-        }
-      },
-      dex: { unlocked: {}, prog: {} }
-    };
-  }
-
   function load() {
     let data = null;
     try { data = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch (e) { data = null; }
-    if (!data) return false;
-    if (data.v === 1) data = migrateV1(data);
-    if (data.v !== 2 || !data.tanks) return false;
+    if (!data || data.v !== 2 || !data.tanks) return false;
 
     state.coins = Number(data.coins) || 0;
     state.nextId = Number(data.nextId) || 1;
@@ -1607,8 +1664,8 @@
       state.tanks[key] = t;
     }
 
-    if (!state.tanks.tropical) state.tanks.tropical = makeTank("tropical", "はじめての水槽");
-    state.current = state.tanks[data.current] ? data.current : "tropical";
+    if (!state.tanks.japanFresh) state.tanks.japanFresh = makeTank("japanFresh", "はじめての水槽");
+    state.current = state.tanks[data.current] ? data.current : "japanFresh";
     tank = state.tanks[state.current];
     denormTank(tank);
 
@@ -1742,7 +1799,7 @@
     if (!u) return 1;
     if (state.dex.unlocked[key]) return 1;
     if (!u.need) {
-      const t = state.tanks[HOME[key]];
+      const t = state.tanks[homeBiome(key)];
       return t && u.holds(t) ? 1 : 0;
     }
     return clamp((state.dex.prog[key] || 0) / u.need, 0, 1);
@@ -1751,7 +1808,7 @@
   function tickUnlocks(dt) {
     for (const key in UNLOCKS) {
       if (state.dex.unlocked[key]) continue;
-      const home = state.tanks[HOME[key]];
+      const home = state.tanks[homeBiome(key)];
       if (!home) continue;
       const u = UNLOCKS[key];
       if (!u.holds(home)) continue;
@@ -2054,6 +2111,7 @@
 
   function drawFishShape(g, s, L, phase, pale) {
     const Hh = L * s.ratio;
+    const Hf = Hh * (s.finK || 1);          // fins scale separately from the body
     const wag = Math.sin(phase) * 0.34;
     const finWag = Math.sin(phase * 1.3) * 0.5;
 
@@ -2069,25 +2127,25 @@
     g.beginPath();
     if (s.tail === "fork") {
       g.moveTo(0, 0);
-      g.lineTo(-L * 0.30, -Hh * 0.72);
-      g.quadraticCurveTo(-L * 0.16, 0, -L * 0.30, Hh * 0.72);
+      g.lineTo(-L * 0.30, -Hf * 0.72);
+      g.quadraticCurveTo(-L * 0.16, 0, -L * 0.30, Hf * 0.72);
       g.closePath();
     } else if (s.tail === "fan") {
-      g.moveTo(0, -Hh * 0.16);
-      g.quadraticCurveTo(-L * 0.26, -Hh * 0.7, -L * 0.34, 0);
-      g.quadraticCurveTo(-L * 0.26, Hh * 0.7, 0, Hh * 0.16);
+      g.moveTo(0, -Hf * 0.16);
+      g.quadraticCurveTo(-L * 0.26, -Hf * 0.7, -L * 0.34, 0);
+      g.quadraticCurveTo(-L * 0.26, Hf * 0.7, 0, Hf * 0.16);
       g.closePath();
     } else if (s.tail === "veil") {
       g.moveTo(0, 0);
-      g.quadraticCurveTo(-L * 0.30, -Hh * 0.95, -L * 0.44, -Hh * 0.30);
-      g.quadraticCurveTo(-L * 0.36, 0, -L * 0.44, Hh * 0.30);
-      g.quadraticCurveTo(-L * 0.30, Hh * 0.95, 0, 0);
+      g.quadraticCurveTo(-L * 0.30, -Hf * 0.95, -L * 0.44, -Hf * 0.30);
+      g.quadraticCurveTo(-L * 0.36, 0, -L * 0.44, Hf * 0.30);
+      g.quadraticCurveTo(-L * 0.30, Hf * 0.95, 0, 0);
     } else {
-      g.moveTo(0, -Hh * 0.18);
-      g.quadraticCurveTo(-L * 0.30, -Hh * 0.85, -L * 0.56, -Hh * 0.52);
-      g.quadraticCurveTo(-L * 0.50, -Hh * 0.05, -L * 0.60, Hh * 0.40);
-      g.quadraticCurveTo(-L * 0.38, Hh * 0.30, -L * 0.22, Hh * 0.62);
-      g.quadraticCurveTo(-L * 0.14, Hh * 0.28, 0, Hh * 0.18);
+      g.moveTo(0, -Hf * 0.18);
+      g.quadraticCurveTo(-L * 0.30, -Hf * 0.85, -L * 0.56, -Hf * 0.52);
+      g.quadraticCurveTo(-L * 0.50, -Hf * 0.05, -L * 0.60, Hf * 0.40);
+      g.quadraticCurveTo(-L * 0.38, Hf * 0.30, -L * 0.22, Hf * 0.62);
+      g.quadraticCurveTo(-L * 0.14, Hf * 0.28, 0, Hf * 0.18);
       g.closePath();
     }
     g.fill();
@@ -2097,30 +2155,43 @@
     g.fillStyle = s.fin;
     g.globalAlpha *= 0.85;
     g.beginPath();
-    g.moveTo(L * 0.06, -Hh * 0.42);
+    g.moveTo(L * 0.06, -Hf * 0.42);
     if (s.tall) {
-      g.quadraticCurveTo(L * 0.02, -Hh * 1.5, -L * 0.28, -Hh * 0.9);
+      g.quadraticCurveTo(L * 0.02, -Hf * 1.5, -L * 0.28, -Hf * 0.9);
     } else {
-      g.quadraticCurveTo(-L * 0.04, -Hh * 0.98, -L * 0.24, -Hh * 0.44);
+      g.quadraticCurveTo(-L * 0.04, -Hf * 0.98, -L * 0.24, -Hf * 0.44);
     }
     g.closePath();
     g.fill();
 
     g.beginPath();
-    g.moveTo(L * 0.02, Hh * 0.42);
-    if (s.tall) g.quadraticCurveTo(-L * 0.06, Hh * 1.5, -L * 0.28, Hh * 0.85);
-    else g.quadraticCurveTo(-L * 0.08, Hh * 0.86, -L * 0.24, Hh * 0.42);
+    g.moveTo(L * 0.02, Hf * 0.42);
+    if (s.tall) g.quadraticCurveTo(-L * 0.06, Hf * 1.5, -L * 0.28, Hf * 0.85);
+    else g.quadraticCurveTo(-L * 0.08, Hf * 0.86, -L * 0.24, Hf * 0.42);
     g.closePath();
     g.fill();
     g.globalAlpha /= 0.85;
 
     // ---- body ----
     const body = new Path2D();
-    body.moveTo(L * 0.50, 0);
-    body.quadraticCurveTo(L * 0.18, -Hh * 0.52, -L * 0.10, -Hh * 0.46);
-    body.quadraticCurveTo(-L * 0.34, -Hh * 0.26, -L * 0.42, 0);
-    body.quadraticCurveTo(-L * 0.34, Hh * 0.26, -L * 0.10, Hh * 0.46);
-    body.quadraticCurveTo(L * 0.18, Hh * 0.52, L * 0.50, 0);
+    if (s.boxy) {
+      // a boxfish is nearly a cube with rounded corners
+      body.moveTo(L * 0.46, -Hh * 0.18);
+      body.quadraticCurveTo(L * 0.5, -Hh * 0.5, L * 0.2, -Hh * 0.52);
+      body.lineTo(-L * 0.16, -Hh * 0.5);
+      body.quadraticCurveTo(-L * 0.42, -Hh * 0.46, -L * 0.4, -Hh * 0.12);
+      body.lineTo(-L * 0.4, Hh * 0.12);
+      body.quadraticCurveTo(-L * 0.42, Hh * 0.46, -L * 0.16, Hh * 0.5);
+      body.lineTo(L * 0.2, Hh * 0.52);
+      body.quadraticCurveTo(L * 0.5, Hh * 0.5, L * 0.46, Hh * 0.18);
+      body.quadraticCurveTo(L * 0.52, 0, L * 0.46, -Hh * 0.18);
+    } else {
+      body.moveTo(L * 0.50, 0);
+      body.quadraticCurveTo(L * 0.18, -Hh * 0.52, -L * 0.10, -Hh * 0.46);
+      body.quadraticCurveTo(-L * 0.34, -Hh * 0.26, -L * 0.42, 0);
+      body.quadraticCurveTo(-L * 0.34, Hh * 0.26, -L * 0.10, Hh * 0.46);
+      body.quadraticCurveTo(L * 0.18, Hh * 0.52, L * 0.50, 0);
+    }
 
     const grad = g.createLinearGradient(0, -Hh * 0.55, 0, Hh * 0.55);
     grad.addColorStop(0, s.c2);
@@ -2174,9 +2245,27 @@
       sheen2.addColorStop(1, "rgba(232,116,159,.3)");
       g.fillStyle = sheen2;
       g.fill(body);
+    } else if (s.mark === "clown") {
+      for (const b of [0.3, -0.02, -0.32]) {
+        g.save();
+        g.translate(L * b, 0);
+        g.rotate(b > 0 ? -0.22 : 0.1);
+        g.fillStyle = "rgba(22,16,12,.85)";
+        g.fillRect(-L * 0.075, -Hh * 0.7, L * 0.15, Hh * 1.4);
+        g.fillStyle = "#fdf6ec";
+        g.fillRect(-L * 0.055, -Hh * 0.7, L * 0.11, Hh * 1.4);
+        g.restore();
+      }
+    } else if (s.mark === "sheen") {
+      const sh = g.createLinearGradient(0, -Hh * 0.55, 0, Hh * 0.55);
+      sh.addColorStop(0, "rgba(255,255,255,.5)");
+      sh.addColorStop(0.4, "rgba(255,255,255,.08)");
+      sh.addColorStop(1, "rgba(0,20,60,.28)");
+      g.fillStyle = sh;
+      g.fill(body);
     } else if (s.mark === "spots") {
       const r = mulberry32(4242);
-      g.fillStyle = "rgba(60,40,20,.34)";
+      g.fillStyle = s.spotColor || "rgba(60,40,20,.34)";
       for (let i = 0; i < 9; i++) {
         g.beginPath();
         g.arc(-L * 0.35 + r() * L * 0.75, (r() - 0.5) * Hh * 0.8, L * 0.035, 0, 7);
@@ -2318,7 +2407,82 @@
     g.restore();
   }
 
+  function drawHermitShape(g, s, L, phase) {
+    g.save();
+
+    // legs and claws first, so the shell sits over them
+    g.strokeStyle = "#c07846";
+    g.lineWidth = Math.max(0.8, L * 0.075);
+    g.lineCap = "round";
+    for (let i = 0; i < 3; i++) {
+      const bx = L * (0.16 - i * 0.17);
+      const k = Math.sin(phase + i * 1.7) * L * 0.07;
+      g.beginPath();
+      g.moveTo(bx, L * 0.08);
+      g.quadraticCurveTo(bx + L * 0.16, L * 0.24 + k, bx + L * 0.08, L * 0.42);
+      g.stroke();
+    }
+
+    g.fillStyle = "#d3874f";
+    for (const c of [[0.46, 0.12, 0.15], [0.36, 0.28, 0.1]]) {
+      g.beginPath();
+      g.ellipse(L * c[0], L * c[1], L * c[2], L * c[2] * 0.72, -0.3, 0, 7);
+      g.fill();
+      g.strokeStyle = "rgba(120,64,32,.6)";
+      g.lineWidth = Math.max(0.5, L * 0.03);
+      g.beginPath();
+      g.moveTo(L * (c[0] + c[2] * 0.5), L * (c[1] - c[2] * 0.3));
+      g.lineTo(L * (c[0] + c[2] * 0.95), L * (c[1] + c[2] * 0.1));
+      g.stroke();
+    }
+
+    // eye stalks
+    g.strokeStyle = "#c07846";
+    g.lineWidth = Math.max(0.6, L * 0.045);
+    for (const k of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(L * 0.3, L * 0.02);
+      g.lineTo(L * 0.44, L * (-0.16 + k * 0.05));
+      g.stroke();
+    }
+    g.fillStyle = "#221a12";
+    for (const k of [-1, 1]) {
+      g.beginPath();
+      g.arc(L * 0.45, L * (-0.16 + k * 0.05), Math.max(0.8, L * 0.055), 0, 7);
+      g.fill();
+    }
+
+    // borrowed shell
+    g.save();
+    g.translate(-L * 0.2, -L * 0.06);
+    g.rotate(-0.22);
+    const sg = g.createLinearGradient(0, -L * 0.42, 0, L * 0.3);
+    sg.addColorStop(0, s.c2);
+    sg.addColorStop(1, s.c1);
+    g.fillStyle = sg;
+    g.beginPath();
+    g.ellipse(0, 0, L * 0.4, L * 0.34, 0, 0, 7);
+    g.fill();
+    g.strokeStyle = "rgba(58,38,20,.45)";
+    g.lineWidth = Math.max(0.7, L * 0.05);
+    g.beginPath();
+    for (let a = 0; a < 11; a += 0.2) {
+      const rr = L * 0.42 * (1 - a / 12);
+      const px = Math.cos(a) * rr, py = Math.sin(a) * rr * 0.86;
+      a === 0 ? g.moveTo(px, py) : g.lineTo(px, py);
+    }
+    g.stroke();
+    g.fillStyle = "rgba(255,255,255,.22)";
+    g.beginPath();
+    g.ellipse(-L * 0.14, -L * 0.16, L * 0.16, L * 0.1, -0.5, 0, 7);
+    g.fill();
+    g.restore();
+
+    g.restore();
+  }
+
   function drawSnailShape(g, s, L, phase) {
+    if (s.hermit) { drawHermitShape(g, s, L, phase); return; }
     g.save();
     // foot
     g.fillStyle = "#e5d7bd";
@@ -2639,7 +2803,7 @@
     g.stroke();
   }
 
-  const SOLID_DECOR = { rock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1, shell: 1, bamboo: 1 };
+  const SOLID_DECOR = { rock: 1, liverock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1, shell: 1, bamboo: 1, anemone: 1 };
 
   function drawDecor(g, d, baseY, sizeOverride) {
     const s = sizeOverride || decorPx(d);
@@ -2719,8 +2883,14 @@
         }
         break;
       }
+      case "liverock":
       case "rock": {
-        const tones = [
+        const live = d.key === "liverock";
+        const tones = live ? [
+          ["#c9a2ac", "#8e6a7c", "#4b3843"],
+          ["#b9a3a0", "#836f72", "#453a3c"],
+          ["#c2aab6", "#8a7387", "#483c47"]
+        ] : [
           ["#a2a6a1", "#6d726f", "#3e4444"],
           ["#a8a08c", "#77705f", "#443f34"],
           ["#98a1a6", "#6a7377", "#3b4245"]
@@ -2775,7 +2945,7 @@
           g.stroke();
 
           // algae settling on the upper surface
-          g.fillStyle = "rgba(58,96,52,.34)";
+          g.fillStyle = live ? "rgba(224,110,162,.5)" : "rgba(58,96,52,.34)";
           for (let i = 0; i < 4; i++) {
             g.beginPath();
             g.ellipse(st.x + (r() - 0.5) * st.w * 1.5, cy - st.h * (0.35 + r() * 0.5),
@@ -3036,6 +3206,56 @@
           g.fill();
         }
         g.restore();
+        break;
+      }
+      case "anemone": {
+        const foot = s * 0.2, top = -s * 0.34;
+
+        // column
+        const cg = g.createLinearGradient(0, top, 0, 0);
+        cg.addColorStop(0, "#d8b19c");
+        cg.addColorStop(1, "#9c6f5f");
+        g.fillStyle = cg;
+        g.beginPath();
+        g.moveTo(-foot, 0);
+        g.quadraticCurveTo(-foot * 0.55, top * 0.6, -foot * 0.62, top);
+        g.lineTo(foot * 0.62, top);
+        g.quadraticCurveTo(foot * 0.55, top * 0.6, foot, 0);
+        g.closePath();
+        g.fill();
+
+        // tentacles
+        g.lineCap = "round";
+        for (let i = 0; i < 24; i++) {
+          const t = i / 23;
+          const a = -Math.PI * 0.92 + t * Math.PI * 0.84;
+          const len = s * (0.3 + ((i * 7) % 5) * 0.035);
+          const sway = Math.sin(time * 1.1 + i * 0.9 + d.seed * 0.13) * 0.28;
+          const bx = Math.cos(a) * foot * 0.66;
+          const by = top + Math.sin(a) * s * 0.05;
+          const ex = bx + Math.cos(a + sway) * len;
+          const ey = by + Math.sin(a + sway) * len;
+          g.strokeStyle = "rgba(216,150,168,.85)";
+          g.lineWidth = Math.max(1, s * 0.032);
+          g.beginPath();
+          g.moveTo(bx, by);
+          g.quadraticCurveTo(bx + Math.cos(a) * len * 0.5, by + Math.sin(a) * len * 0.5, ex, ey);
+          g.stroke();
+          g.fillStyle = "rgba(150,74,124,.85)";
+          g.beginPath();
+          g.arc(ex, ey, Math.max(0.9, s * 0.028), 0, 7);
+          g.fill();
+        }
+
+        // oral disc
+        g.fillStyle = "#c9857f";
+        g.beginPath();
+        g.ellipse(0, top, foot * 0.66, s * 0.05, 0, 0, 7);
+        g.fill();
+        g.fillStyle = "rgba(90,44,54,.7)";
+        g.beginPath();
+        g.ellipse(0, top, foot * 0.2, s * 0.018, 0, 0, 7);
+        g.fill();
         break;
       }
       case "airstone": {
@@ -3819,7 +4039,7 @@
     }
 
     for (const biome of BIOME_KEYS) {
-      const keys = Object.keys(SPECIES).filter(k => HOME[k] === biome || (biome === BIOME_KEYS[0] && HOME[k] === "both"));
+      const keys = Object.keys(SPECIES).filter(k => homeBiome(k) === biome);
       if (!keys.length) continue;
 
       const head = document.createElement("div");
@@ -4213,6 +4433,7 @@
    * ------------------------------------------------------------------ */
 
   resize();
+  try { localStorage.removeItem("yuragi.aquarium.v1"); } catch (e) { /* private mode */ }
   const hadSave = load();
   if (!hadSave) {
     tank.pets.push(makePet("medaka", {}));
