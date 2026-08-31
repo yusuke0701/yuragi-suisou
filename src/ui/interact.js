@@ -2,7 +2,7 @@
 
 import { BIOMES, BIOME_KEYS, DECOR, SPECIES, UNLOCKS, homeBiome, inBiome } from "../catalogue.js";
 import { drawPreview } from "../draw/scene.js";
-import { needsCare, rateOf, unlockProgress } from "../economy.js";
+import { needsCare, rateOf, unlockHint, unlockProgress } from "../economy.js";
 import { freeEelX, makeDecor, makePet } from "../entities.js";
 import { bubbles, feed, fx, sparks, sprinkle } from "../sim.js";
 import { denormTank, makeTank, normTank, save, selection, state, tank } from "../state.js";
@@ -276,7 +276,7 @@ export function renderDex() {
         const u = UNLOCKS[key];
         const hint = document.createElement("span");
         hint.className = "hint";
-        hint.textContent = u.hint + (u.need ? "（" + Math.round(unlockProgress(key) * 100) + "%）" : "");
+        hint.textContent = unlockHint(key) + (u.need ? "  " + Math.round(unlockProgress(key) * 100) + "%" : "");
         bot.appendChild(hint);
       } else {
         const note = document.createElement("span");
@@ -475,15 +475,19 @@ export function renderShop() {
       const u = UNLOCKS[it.key];
       const lock = document.createElement("span");
       lock.className = "good-lock";
-      lock.textContent = u.hint;
+      lock.textContent = unlockHint(it.key);
       btn.appendChild(lock);
       if (u.need) {
+        const pct = Math.round(unlockProgress(it.key) * 100);
         const bar = document.createElement("span");
         bar.className = "lock-bar";
         const fill = document.createElement("span");
-        fill.style.width = Math.round(unlockProgress(it.key) * 100) + "%";
+        fill.style.width = pct + "%";
         bar.appendChild(fill);
-        btn.appendChild(bar);
+        const num = document.createElement("span");
+        num.className = "lock-pct";
+        num.textContent = pct + "%";
+        btn.append(bar, num);
       }
     } else {
       const note = document.createElement("span");

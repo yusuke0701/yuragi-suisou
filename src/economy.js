@@ -42,6 +42,14 @@ export function unlockSpecies(key) {
   onUnlock(key);
 }
 
+// 条件の文言。時間がかかるものは、かかることを明示する。
+export function unlockHint(key) {
+  const u = UNLOCKS[key];
+  if (!u) return "";
+  if (!u.need) return u.hint;
+  return u.hint + "（あわせて" + Math.round(u.need / 3600) + "時間）";
+}
+
 export function unlockProgress(key) {
   const u = UNLOCKS[key];
   if (!u) return 1;
@@ -66,7 +74,21 @@ export function tickUnlocks(dt) {
   }
 }
 
-export function tickEconomy(dt, offline) {
+// 留守ぶんは細かく刻んで進める。まとめて1回で進めると、解放条件の判定が
+// 「空腹になりきった最後の状態」しか見ず、留守中ずっと満たしていた時間が消える。
+export function catchUp(elapsed) {
+  const STEP = 300;                       // 5分刻み
+  let left = elapsed, earnedBefore = state.coins;
+  while (left > 0) {
+    const dt = Math.min(STEP, left);
+    tickEconomy(dt);
+    left -= dt;
+  }
+  const got = Math.floor(state.coins - earnedBefore);
+  if (got > 3) setTimeout(() => toast("るすばん中に " + got + " コインたまった"), 500);
+}
+
+export function tickEconomy(dt) {
   const hungerRate = 1 / (5 * 3600);
   let earned = 0;
 
@@ -89,8 +111,4 @@ export function tickEconomy(dt, offline) {
   state.coins += earned;
   tickUnlocks(dt);
 
-  if (offline) {
-    const got = Math.floor(earned);
-    if (got > 3) setTimeout(() => toast("るすばん中に " + got + " コインたまった"), 500);
-  }
 }

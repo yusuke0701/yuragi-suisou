@@ -211,19 +211,19 @@ export const UNLOCKS = {
     holds: t => t.decor.filter(d => d.key === "rock" || d.key === "driftwood").length >= 3
   },
   tanago: {
-    need: 6 * 3600, hint: "メダカを3匹、満腹80%以上で飼う",
+    need: 6 * 3600, hint: "メダカを3匹、満腹50%以上でたもつ",
     holds: t => {
       const m = t.pets.filter(p => p.key === "medaka");
-      return m.length >= 3 && m.every(p => p.full >= 0.8);
+      return m.length >= 3 && m.every(p => p.full >= 0.5);
     }
   },
   dojo: {
-    need: 12 * 3600, hint: "水質を90%以上にたもつ",
-    holds: t => t.dirt <= 0.1
+    need: 8 * 3600, hint: "水質を85%以上にたもつ",
+    holds: t => t.dirt <= 0.15
   },
   oikawa: {
-    need: 24 * 3600, hint: "きげんを85%以上にたもつ",
-    holds: t => moodOf(t) >= 0.85
+    need: 12 * 3600, hint: "きげんを75%以上にたもつ",
+    holds: t => moodOf(t) >= 0.75
   },
 
   betta: {
@@ -231,8 +231,8 @@ export const UNLOCKS = {
     holds: t => t.pets.length >= 8
   },
   angel: {
-    need: 12 * 3600, hint: "熱帯魚水槽のきげんを90%以上にたもつ",
-    holds: t => moodOf(t) >= 0.9
+    need: 12 * 3600, hint: "熱帯魚水槽のきげんを80%以上にたもつ",
+    holds: t => moodOf(t) >= 0.8
   },
 
   clownfish: {
@@ -244,8 +244,8 @@ export const UNLOCKS = {
     holds: t => t.decor.filter(d => d.key === "coral" || d.key === "anemone").length >= 3
   },
   yadokari: {
-    need: 12 * 3600, hint: "海水水槽の水質を95%以上にたもつ",
-    holds: t => t.dirt <= 0.05
+    need: 8 * 3600, hint: "海水水槽の水質を90%以上にたもつ",
+    holds: t => t.dirt <= 0.1
   }
 };
 

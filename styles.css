@@ -212,6 +212,14 @@ button {
   overflow: hidden;
 }
 
+.lock-pct {
+  font-size: 9.5px;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  align-self: flex-end;
+  margin-top: -3px;
+}
+
 .lock-bar span {
   display: block;
   height: 100%;

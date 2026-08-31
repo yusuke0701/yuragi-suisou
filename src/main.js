@@ -1,7 +1,7 @@
 // 起動、リサイズ、毎フレームのループ。
 
 import { drawScene } from "./draw/scene.js";
-import { tickEconomy } from "./economy.js";
+import { catchUp, tickEconomy } from "./economy.js";
 import { makeDecor, makePet } from "./entities.js";
 import { bubbles, updateAmbient, updateFood, updatePet } from "./sim.js";
 import { load, save, state, tank } from "./state.js";
@@ -36,7 +36,7 @@ function frame(now) {
   last = now;
   advanceTime(dt);
 
-  tickEconomy(dt, false);
+  tickEconomy(dt);
   for (const p of tank.pets) updatePet(p, dt);
   updateFood(dt);
   updateAmbient(dt);
@@ -55,7 +55,7 @@ if (elapsed < 0) {
   tank.decor.push(makeDecor("plant", W * 0.24, {}));
   setTimeout(() => showHint("魚をタップすると名前をつけられる", 5200), 900);
 } else if (elapsed > 20) {
-  tickEconomy(elapsed, true);
+  catchUp(elapsed);
 }
 
 wireInteractions();
