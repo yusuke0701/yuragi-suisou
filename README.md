@@ -64,6 +64,9 @@
 
 コードの決めごと、生きものや水槽の増やしかた、踏んだ落とし穴は [AGENTS.md](AGENTS.md) に。
 
+今後の方針は [Issues](https://github.com/yusuke0701/yuragi-suisou/issues) にある。
+地域の広げかたは [#1](https://github.com/yusuke0701/yuragi-suisou/issues/1) が入口。
+
 ## ローカルで動かす
 
 ファイルを直接ブラウザで開くだけで動く。
