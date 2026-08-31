@@ -5,7 +5,7 @@ import { drawPreview } from "../draw/scene.js";
 import { needsCare, rateOf, unlockHint, unlockProgress } from "../economy.js";
 import { freeEelX, makeDecor, makePet } from "../entities.js";
 import { bubbles, feed, fx, sparks, sprinkle } from "../sim.js";
-import { denormTank, makeTank, normTank, save, selection, state, tank } from "../state.js";
+import { makeTank, save, selection, setTank, state, tank } from "../state.js";
 import { el, syncHud } from "./chrome.js";
 import { CAPACITY, DECOR_CAP, SAVE_KEY, clamp, hideHint, rnd, showHint, toast } from "../util.js";
 import { DECOR_MAX, DECOR_MIN, H, W, canvas, decorPx, petPx, sandTop } from "../view.js";
@@ -338,10 +338,7 @@ export function syncTankChrome() {
 
 export function useTank(key) {
   if (!state.tanks[key] || key === state.current) return;
-  normTank(tank);
-  state.current = key;
-  tank = state.tanks[key];
-  denormTank(tank);
+  setTank(key);                       // tank の差し替えは state.js の仕事
   state.food.length = 0;
   bubbles.length = 0;
   sparks.length = 0;
@@ -359,7 +356,15 @@ export function buyTank(key) {
   state.coins -= b.price;
   state.tanks[key] = makeTank(key);
   useTank(key);
-  tank.decor.push(makeDecor("plant", W * rnd(0.15, 0.3), {}));
+
+  // 買った直後が空っぽだと、何が変わったのか分からない。
+  // その地域らしい顔ぶれを最初から入れておく。
+  const st = b.starter || { pets: [], decor: [] };
+  st.decor.forEach((k, i) => {
+    tank.decor.push(makeDecor(k, W * (0.18 + i * 0.42) + rnd(-30, 30), {}));
+  });
+  st.pets.forEach(k => tank.pets.push(makePet(k, {}, tank.pets)));
+
   toast(b.name + "を用意した");
   closeSheets();
   save();

@@ -36,11 +36,14 @@ export function drawScene() {
   if (!night) {
     g.save();
     g.globalCompositeOperation = "lighter";
-    const rayW = [0.030, 0.052, 0.022, 0.044, 0.026];
-    for (let i = 0; i < 5; i++) {
-      const x = W * (0.10 + i * 0.20) + Math.sin(time * 0.13 + i * 1.7) * W * 0.025;
-      const w = W * rayW[i];
-      const a = 0.055 + rayW[i] * 1.1;
+    // 本数と強さは水槽ごと。木陰の川は細く弱く、照明の効いた水槽は太く明るい
+    const rayW = [0.030, 0.052, 0.022, 0.044, 0.026, 0.038];
+    const n = bio.rayCount || 5;
+    const power = bio.rayPower || 1;
+    for (let i = 0; i < n; i++) {
+      const x = W * ((0.5 / n) + i / n) + Math.sin(time * 0.13 + i * 1.7) * W * 0.025;
+      const w = W * rayW[i % rayW.length] * (0.8 + power * 0.3);
+      const a = (0.055 + rayW[i % rayW.length] * 1.1) * power;
       const grd = g.createLinearGradient(0, wt, 0, st * 0.96);
       grd.addColorStop(0, "rgba(" + bio.ray + "," + a.toFixed(3) + ")");
       grd.addColorStop(0.55, "rgba(" + bio.ray + "," + (a * 0.4).toFixed(3) + ")");

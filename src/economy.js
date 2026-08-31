@@ -1,7 +1,7 @@
 // 満腹度・水質・コイン・図鑑の解放。
 
 import { DECOR, SPECIES, UNLOCKS, homeBiome } from "./catalogue.js";
-import { load, state, tank } from "./state.js";
+import { state, tank } from "./state.js";
 import { clamp, moodOf, toast } from "./util.js";
 
 // 解放されたことを UI に伝える口。economy が UI を直接知らないようにする

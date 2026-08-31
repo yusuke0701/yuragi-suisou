@@ -1,6 +1,7 @@
 // 起動、リサイズ、毎フレームのループ。
 
 import { drawScene } from "./draw/scene.js";
+import { BIOMES } from "./catalogue.js";
 import { catchUp, tickEconomy } from "./economy.js";
 import { makeDecor, makePet } from "./entities.js";
 import { bubbles, updateAmbient, updateFood, updatePet } from "./sim.js";
@@ -51,8 +52,9 @@ try { localStorage.removeItem("yuragi.aquarium.v1"); } catch (e) { /* private mo
 
 const elapsed = load();                       // -1 なら新規、そうでなければ留守の秒数
 if (elapsed < 0) {
-  tank.pets.push(makePet("medaka", {}, tank.pets));
-  tank.decor.push(makeDecor("plant", W * 0.24, {}));
+  const st = BIOMES[tank.biome].starter;
+  st.decor.forEach((k, i) => tank.decor.push(makeDecor(k, W * (0.2 + i * 0.4), {})));
+  st.pets.forEach(k => tank.pets.push(makePet(k, {}, tank.pets)));
   setTimeout(() => showHint("魚をタップすると名前をつけられる", 5200), 900);
 } else if (elapsed > 20) {
   catchUp(elapsed);

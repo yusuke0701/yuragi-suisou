@@ -88,6 +88,16 @@ export function save() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (e) { /* private mode */ }
 }
 
+// 水槽切り替えのバグ（#9）で、かざりがピクセル座標のまま保存され、
+// 読み込み時に端へクランプされた記録がありうる。端に固まっていたら並べ直す。
+function repairPileUp(t) {
+  for (const edge of [0.955, 0.045]) {
+    const stuck = t.decor.filter(d => edge > 0.5 ? d.x >= edge : d.x <= edge);
+    if (stuck.length < 2) continue;
+    stuck.forEach((d, i) => { d.x = 0.15 + (0.7 * (i + 0.5)) / stuck.length; });
+  }
+}
+
 export function load() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch (e) { data = null; }
@@ -125,6 +135,7 @@ export function load() {
       d.x = clamp(Number(dd.nx) || 0.5, 0.04, 0.96);
       t.decor.push(d);
     });
+    repairPileUp(t);
     state.tanks[key] = t;
   }
 

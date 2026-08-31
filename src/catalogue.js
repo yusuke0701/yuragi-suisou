@@ -141,24 +141,28 @@ export const BIOMES = {
   japanFresh: {
     name: "日本の淡水魚", short: "日本淡水", price: 0, order: 0,
     note: "小川や田んぼの水辺。はじめの水槽。",
-    water: ["#2f8f79", "#136058", "#062f2c"],
-    waterNight: ["#0d302c", "#082523", "#041816"],
-    sand: ["#d6c8a4", "#877b5c"],
-    sandNight: ["#8f8366", "#4f4835"],
-    pebble: ["#b6a887", "#7b7157"],
-    mound: ["214,200,164", "141,130,101"],
-    ray: "198,255,228"
+    // 木陰の小川。光はやわらかく、緑が濃い
+    water: ["#3f9b6e", "#14624a", "#052b24"],
+    waterNight: ["#0e2f26", "#08251f", "#041714"],
+    sand: ["#cabb92", "#776c4e"],
+    sandNight: ["#877b5e", "#4a422f"],
+    pebble: ["#a89a76", "#6d6448"],
+    mound: ["202,187,146", "135,123,94"],
+    ray: "212,255,206", rayCount: 3, rayPower: 0.62,
+    starter: { pets: ["medaka"], decor: ["plant"] }
   },
   tropical: {
     name: "熱帯魚水槽", short: "熱帯魚", price: 1400, order: 1,
     note: "南米やアマゾンの魚たち。にぎやかで色が濃い。",
-    water: ["#1a7f97", "#0b566d", "#052d3c"],
+    // 照明の効いた水草水槽。明るく、青が澄んでいる
+    water: ["#2ba7c8", "#116a90", "#062f46"],
     waterNight: ["#0a2c3a", "#072430", "#04171f"],
-    sand: ["#ecdcb6", "#a8946f"],
+    sand: ["#f2e2b8", "#b09a6f"],
     sandNight: ["#9d906f", "#5c5340"],
-    pebble: ["#c6b189", "#8d7f61"],
-    mound: ["234,216,178", "158,145,116"],
-    ray: "178,238,255"
+    pebble: ["#cdb78d", "#948564"],
+    mound: ["242,226,184", "158,145,116"],
+    ray: "196,246,255", rayCount: 6, rayPower: 1.35,
+    starter: { pets: ["neon", "neon"], decor: ["plant", "driftwood"] }
   },
   marine: {
     name: "日本の海水魚", short: "海水", price: 4200, order: 2,
@@ -169,7 +173,8 @@ export const BIOMES = {
     sandNight: ["#a49c88", "#655f50"],
     pebble: ["#e2d6ba", "#b3a68c"],
     mound: ["246,239,220", "164,156,136"],
-    ray: "190,246,255"
+    ray: "190,246,255", rayCount: 5, rayPower: 1.6,
+    starter: { pets: ["deba", "deba"], decor: ["liverock", "coral"] }
   }
 };
 
