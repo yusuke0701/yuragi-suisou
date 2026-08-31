@@ -370,6 +370,55 @@
 
   .tank.is-feeding { cursor: crosshair; }
 
+  /* while feeding, a tub of food follows the pointer instead of the cursor */
+  @media (hover: hover) and (pointer: fine) {
+    .tank.is-feeding.has-shaker { cursor: none; }
+  }
+
+  .shaker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 68px;
+    height: 81px;
+    margin-left: -25px;
+    margin-top: -61px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 140ms ease;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45));
+    z-index: 3;
+    will-change: transform;
+  }
+
+  .shaker.is-on { opacity: 1; }
+
+  .shaker .tube {
+    transform-box: view-box;
+    transform-origin: 19px 47px;
+    transform: rotate(9deg);
+    transition: transform 220ms cubic-bezier(.3, 1.4, .5, 1);
+  }
+
+  .shaker.is-pouring .tube { transform: rotate(52deg); }
+
+  .grain { opacity: 0; transform-box: view-box; }
+
+  .shaker.is-pouring .grain { animation: sprinkle 620ms ease-in forwards; }
+  .shaker.is-pouring .grain:nth-child(2) { animation-delay: 60ms; }
+  .shaker.is-pouring .grain:nth-child(3) { animation-delay: 120ms; }
+  .shaker.is-pouring .grain:nth-child(4) { animation-delay: 175ms; }
+
+  @keyframes sprinkle {
+    0%   { opacity: 0; transform: translate(0, -4px); }
+    18%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(2px, 26px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shaker.is-pouring .grain { animation: none; opacity: .9; }
+  }
+
   /* glass rim + reflection, drawn in CSS so the canvas stays clean */
   .tank::after {
     content: "";
@@ -854,6 +903,43 @@
   <div class="stage">
     <div class="tank" id="tankBox">
       <canvas id="tank"></canvas>
+
+      <div class="shaker" id="shaker" aria-hidden="true">
+        <svg width="68" height="81" viewBox="0 0 52 62" fill="none">
+          <defs>
+            <linearGradient id="tubeBody" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#c14e26"/>
+              <stop offset=".4" stop-color="#ffb083"/>
+              <stop offset="1" stop-color="#d9612f"/>
+            </linearGradient>
+          </defs>
+
+          <g class="tube">
+            <rect x="7" y="6" width="25" height="36" rx="6" fill="url(#tubeBody)"
+                  stroke="#7d3418" stroke-width="1.1"/>
+            <rect x="7.5" y="17" width="24" height="12" fill="#f7e8c8"/>
+            <path d="M14.2 23.1c1.7-2.5 5.5-2.5 7.2 0-1.7 2.5-5.5 2.5-7.2 0z" fill="#b4552b"/>
+            <path d="M21.6 23.1l3.2-2.3v4.6z" fill="#b4552b"/>
+            <circle cx="16.4" cy="22.5" r=".85" fill="#f7e8c8"/>
+            <rect x="10" y="1.5" width="19" height="7.5" rx="3" fill="#a8441f"/>
+            <rect x="11.6" y="3.2" width="15.8" height="2" rx="1" fill="#cf6b3d"/>
+            <rect x="5.5" y="39.5" width="28" height="6.5" rx="3" fill="#b04d26"/>
+            <ellipse cx="19.5" cy="46" rx="10" ry="3.4" fill="#2d1c10"/>
+            <ellipse cx="19.5" cy="45.2" rx="10" ry="3.4" fill="#e8dcc0" opacity=".22"/>
+            <circle cx="16.2" cy="47.6" r="1.7" fill="#e0a94f"/>
+            <circle cx="21.4" cy="48.2" r="1.5" fill="#c98f3c"/>
+            <circle cx="19" cy="46.6" r="1.3" fill="#eab861"/>
+          </g>
+
+          <g class="grains">
+            <circle class="grain" cx="17" cy="49" r="1.9" fill="#e0a94f"/>
+            <circle class="grain" cx="21" cy="49" r="1.6" fill="#c98f3c"/>
+            <circle class="grain" cx="19" cy="50" r="1.7" fill="#eab861"/>
+            <circle class="grain" cx="23" cy="50" r="1.4" fill="#d9a04a"/>
+          </g>
+        </svg>
+      </div>
+
       <div class="hint" id="hint"></div>
     </div>
     <div class="stand"></div>
@@ -3010,6 +3096,10 @@
     canvas.setPointerCapture(ev.pointerId);
     const p = canvasPos(ev);
     drag = { startX: p.x, startY: p.y, moved: false, decor: null };
+    if (feedMode) {
+      moveShaker(ev.clientX, ev.clientY);
+      showShaker(true);
+    }
     if (!feedMode && !hitPet(p.x, p.y)) {
       const d = hitDecor(p.x, p.y);
       if (d) drag.decor = d;
@@ -3034,6 +3124,14 @@
     } else if (!drag.moved) {
       if (feedMode) {
         sprinkle(p.x, p.y);
+        moveShaker(ev.clientX, ev.clientY);
+        showShaker(true);
+        pour();
+        // a finger has no hover, so let the tub go once it has poured
+        if (ev.pointerType !== "mouse") {
+          clearTimeout(showShaker.t);
+          showShaker.t = setTimeout(() => showShaker(false), 800);
+        }
       } else {
         const pet = hitPet(p.x, p.y);
         if (pet) {
@@ -3052,13 +3150,44 @@
 
   canvas.addEventListener("pointercancel", () => { drag = null; });
 
+  canvas.addEventListener("pointermove", ev => {
+    if (!feedMode) return;
+    moveShaker(ev.clientX, ev.clientY);
+    showShaker(true);
+  });
+
+  canvas.addEventListener("pointerleave", () => showShaker(false));
+
   /* ---- feed ---- */
+
+  const shaker = document.getElementById("shaker");
+  const tankBox = document.getElementById("tankBox");
+
+  function moveShaker(clientX, clientY) {
+    const r = tankBox.getBoundingClientRect();
+    shaker.style.transform =
+      "translate3d(" + (clientX - r.left) + "px," + (clientY - r.top) + "px,0)";
+  }
+
+  function showShaker(on) {
+    shaker.classList.toggle("is-on", on);
+    tankBox.classList.toggle("has-shaker", on);
+  }
+
+  function pour() {
+    shaker.classList.remove("is-pouring");
+    void shaker.offsetWidth;            // restart the animation
+    shaker.classList.add("is-pouring");
+    clearTimeout(pour.t);
+    pour.t = setTimeout(() => shaker.classList.remove("is-pouring"), 650);
+  }
 
   function setFeedMode(on) {
     feedMode = on;
     feedTimer = on ? 9 : 0;
     document.getElementById("feedBtn").classList.toggle("is-armed", on);
-    document.getElementById("tankBox").classList.toggle("is-feeding", on);
+    tankBox.classList.toggle("is-feeding", on);
+    if (!on) showShaker(false);
     if (on) {
       closeCard();
       showHint("水槽をタップして えさをまく");
@@ -3070,8 +3199,15 @@
   document.getElementById("feedBtn").addEventListener("click", () => {
     if (!state.pets.length) { toast("まずはショップで魚をむかえよう"); return; }
     if (feedMode) { setFeedMode(false); return; }
-    sprinkle(W * rnd(0.3, 0.7), null);
+    const at = W * rnd(0.35, 0.65);
     setFeedMode(true);
+    // keep the tub clear of the tank's top edge, and drop the food from its mouth
+    const r = canvas.getBoundingClientRect();
+    const screenY = Math.max(70, r.height * 0.16);
+    sprinkle(at, screenY * (H / r.height) + 12);
+    moveShaker(r.left + at * (r.width / W), r.top + screenY);
+    showShaker(true);
+    pour();
   });
 
   /* ---- clean ---- */
