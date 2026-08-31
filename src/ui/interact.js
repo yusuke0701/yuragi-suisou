@@ -357,15 +357,10 @@ export function buyTank(key) {
   state.tanks[key] = makeTank(key);
   useTank(key);
 
-  // 買った直後が空っぽだと、何が変わったのか分からない。
-  // その地域らしい顔ぶれを最初から入れておく。
-  const st = b.starter || { pets: [], decor: [] };
-  st.decor.forEach((k, i) => {
-    tank.decor.push(makeDecor(k, W * (0.18 + i * 0.42) + rnd(-30, 30), {}));
-  });
-  st.pets.forEach(k => tank.pets.push(makePet(k, {}, tank.pets)));
-
+  // 買った水槽は空のまま渡す。最初の一匹を選ぶところから遊びなので、
+  // こちらで住人を用意してしまわない。代わりに、店の顔ぶれが変わったことだけ伝える。
   toast(b.name + "を用意した");
+  showHint("ショップの顔ぶれが" + b.name + "のものに入れ替わっている", 5200);
   closeSheets();
   save();
 }

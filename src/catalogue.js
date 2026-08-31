@@ -149,6 +149,7 @@ export const BIOMES = {
     pebble: ["#a89a76", "#6d6448"],
     mound: ["202,187,146", "135,123,94"],
     ray: "212,255,206", rayCount: 3, rayPower: 0.62,
+    // 初回起動のときだけ使う。買った水槽は空のまま渡す
     starter: { pets: ["medaka"], decor: ["plant"] }
   },
   tropical: {
@@ -161,8 +162,7 @@ export const BIOMES = {
     sandNight: ["#9d906f", "#5c5340"],
     pebble: ["#cdb78d", "#948564"],
     mound: ["242,226,184", "158,145,116"],
-    ray: "196,246,255", rayCount: 6, rayPower: 1.35,
-    starter: { pets: ["neon", "neon"], decor: ["plant", "driftwood"] }
+    ray: "196,246,255", rayCount: 6, rayPower: 1.35
   },
   marine: {
     name: "日本の海水魚", short: "海水", price: 4200, order: 2,
@@ -173,8 +173,7 @@ export const BIOMES = {
     sandNight: ["#a49c88", "#655f50"],
     pebble: ["#e2d6ba", "#b3a68c"],
     mound: ["246,239,220", "164,156,136"],
-    ray: "190,246,255", rayCount: 5, rayPower: 1.6,
-    starter: { pets: ["deba", "deba"], decor: ["liverock", "coral"] }
+    ray: "190,246,255", rayCount: 5, rayPower: 1.6
   }
 };
 
