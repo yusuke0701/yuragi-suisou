@@ -5,42 +5,69 @@
 
 ---
 
-## 大前提
+## 構成の方針
 
-**`index.html` 1枚で完結させる。** これは制約ではなく設計方針。
+**ビルドなし・依存なしを守る。** ファイル分割はしたが、ここは変えていない。
 
-- ビルド不要、依存パッケージなし、サーバー処理なし
+- `<script type="module">` でブラウザに直接読ませる。バンドラも npm も使わない
 - 外部リソースは Google Fonts のみ。**画像素材は1枚も使わない**（すべて Canvas で手描き）
-- ファイルを分割したくなったら、まず「本当に必要か」を疑う。1ファイルであることが
-  「開けば動く」「どこにでも置ける」を支えている
+- 新しいライブラリを入れたくなったら、まず自前で描けないかを疑う
 
-現在およそ 4,500 行。1万行を超えたら分割を再検討してよい。
+**ES modules は `file://` では読めない。** ローカルで見るときは必ずサーバーを立てる
+（`python3 -m http.server`）。ダブルクリックでは開けない。
 
 ---
 
 ## ファイルの地図
 
-`index.html` は `<style>` → `<body>` → `<script>` の順。スクリプトは1つの IIFE で、
-中はコメントバナーで区切ってある。
+```
+index.html          マークアップだけ（220行）
+styles.css          CSS 全部（1000行）
+src/
+  util.js           clamp/lerp/rnd/mulberry32/shade/toast など。何にも依存しない
+  catalogue.js      SPECIES / DECOR / BIOMES / HOME / UNLOCKS ← データはすべてここ
+  view.js           canvas, ctx, W, H, time と、水槽内の座標変換
+  entities.js       makePet / makeDecor
+  state.js          state, tank, セーブとロード
+  economy.js        満腹度・水質・コイン・図鑑の解放
+  sim.js            毎フレームの挙動（餌・泡・生きものの動き）
+  draw/
+    shapes.js       blobPath / limbPath など形をつくるヘルパ
+    creatures.js    生きものの描画
+    decor.js        かざりの描画
+    scene.js        水槽まるごとの描画と、カード用の小さな絵
+  ui/
+    chrome.js       上のバーと住人パネル
+    interact.js     タップ・ドラッグ・ボタン・シート類
+  main.js           起動、リサイズ、毎フレームのループ
+```
 
-| セクション | 内容 |
+**依存は上から下へ。** `util` → `catalogue` → `view` → `entities` → `state` →
+`economy` / `sim` → `draw` → `ui` → `main`。逆向きの import を足したくなったら、
+だいたい置き場所を間違えている。
+
+例外として **ui のなかだけは相互参照がある**（`interact.js` の中で完結）。
+関数宣言は巻き上げられ、呼ばれるのはイベント発火後なので実害はない。
+
+**新しい生きものやかざりを足すだけなら、触るのは `catalogue.js` と `draw/` の2つ。**
+
+---
+
+## 分割で気をつけていること
+
+**モジュールをまたいで再代入される値は、束縛ではなく器に入れる。**
+ES module の import は読み取り専用なので、`import { x }` した側では `x = ...` できない。
+
+| 値 | 置き場所 |
 |---|---|
-| `catalogue` | `SPECIES` / `DECOR` / `BIOMES` / `HOME` / `UNLOCKS` — **データはすべてここ** |
-| `state` | `state` と `tank`、座標の正規化 |
-| `helpers` | `waterTop()` `sandTop()` `sandBase()` `toast()` など |
-| `save / load` | localStorage の読み書きと起動時の追いつき計算 |
-| `entities` | `makePet()` `makeDecor()` とサイズ計算 |
-| `economy` | 満腹度・水質・コイン・解放条件の進行 |
-| `simulation` | 毎フレームの挙動（`updatePet` ほか） |
-| `drawing: creatures` | 生きものの描画 |
-| `drawing: decor` | かざりの描画と形状ヘルパ |
-| `drawing: scene` | 水・砂・光・泡など背景 |
-| `previews` | ショップ・図鑑・カード用の小さい描画 |
-| `layout / loop` | `resize()` と `requestAnimationFrame` ループ |
-| `hud sync` / `roster` / `interaction` | 画面まわり |
-| `boot` | 起動処理 |
+| `W` `H` `time` | `view.js`。書き換えは `setSize()` `advanceTime()` 経由 |
+| `tank` | `state.js`。書き換えは `setTank()` 経由（live binding で読み手に伝わる） |
+| `feed` `fx` | `sim.js`。オブジェクトの中身を書き換える |
+| `selection` | `state.js`。オブジェクトの中身を書き換える |
 
-**新しい生きものやかざりを足すだけなら、触るのは `catalogue` と `drawing` の2箇所。**
+**循環参照を作らないための逃がし方** — `economy.js` は解放されたことを UI に伝えたいが、
+UI を import すると循環する。`setUnlockHandler()` でコールバックを受け取る形にしてある。
+同じ状況になったら同じ手を使う。
 
 ---
 
@@ -115,13 +142,14 @@ tank  = { biome, name, dirt, night, seed, pets[], decor[], px }
 
 ## テストのしかた
 
-自動テストはない。ローカルで開いて目で見る。
+自動テストはない。ローカルで開いて目で見る。**ES modules なのでサーバーが必須。**
 
 ```
 python3 -m http.server 8000
 ```
 
-`file://` でも動くが、`localStorage` の挙動を本番に合わせたいときは http で見る。
+モジュールはブラウザに強くキャッシュされるので、直したのに変わらないときは
+キャッシュを疑う。`Cache-Control: no-store` を返すサーバーを使うと確実。
 
 **ブラウザで確認するときの注意:**
 - `localStorage` を書き換えてリロードする場合、`beforeunload` の自動セーブが
