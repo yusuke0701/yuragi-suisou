@@ -393,6 +393,14 @@
 
   .shaker.is-on { opacity: 1; }
 
+  /* armed but not yet aimed: bob gently so it reads as "waiting for you" */
+  .shaker.is-waiting svg { animation: shakerBob 2.2s ease-in-out infinite; }
+
+  @keyframes shakerBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+  }
+
   .shaker .tube {
     transform-box: view-box;
     transform-origin: 19px 47px;
@@ -417,6 +425,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .shaker.is-pouring .grain { animation: none; opacity: .9; }
+    .shaker.is-waiting svg { animation: none; }
   }
 
   /* glass rim + reflection, drawn in CSS so the canvas stays clean */
@@ -3124,6 +3133,7 @@
     } else if (!drag.moved) {
       if (feedMode) {
         sprinkle(p.x, p.y);
+        feedTimer = 12;
         moveShaker(ev.clientX, ev.clientY);
         showShaker(true);
         pour();
@@ -3150,13 +3160,21 @@
 
   canvas.addEventListener("pointercancel", () => { drag = null; });
 
+  let pointerInTank = false;
+  let lastPointer = null;
+
   canvas.addEventListener("pointermove", ev => {
+    pointerInTank = true;
+    lastPointer = { x: ev.clientX, y: ev.clientY };
     if (!feedMode) return;
     moveShaker(ev.clientX, ev.clientY);
     showShaker(true);
   });
 
-  canvas.addEventListener("pointerleave", () => showShaker(false));
+  canvas.addEventListener("pointerleave", () => {
+    pointerInTank = false;
+    showShaker(false);
+  });
 
   /* ---- feed ---- */
 
@@ -3169,8 +3187,9 @@
       "translate3d(" + (clientX - r.left) + "px," + (clientY - r.top) + "px,0)";
   }
 
-  function showShaker(on) {
+  function showShaker(on, waiting) {
     shaker.classList.toggle("is-on", on);
+    shaker.classList.toggle("is-waiting", !!(on && waiting));
     tankBox.classList.toggle("has-shaker", on);
   }
 
@@ -3184,7 +3203,7 @@
 
   function setFeedMode(on) {
     feedMode = on;
-    feedTimer = on ? 9 : 0;
+    feedTimer = on ? 12 : 0;
     document.getElementById("feedBtn").classList.toggle("is-armed", on);
     tankBox.classList.toggle("is-feeding", on);
     if (!on) showShaker(false);
@@ -3199,15 +3218,16 @@
   document.getElementById("feedBtn").addEventListener("click", () => {
     if (!state.pets.length) { toast("まずはショップで魚をむかえよう"); return; }
     if (feedMode) { setFeedMode(false); return; }
-    const at = W * rnd(0.35, 0.65);
     setFeedMode(true);
-    // keep the tub clear of the tank's top edge, and drop the food from its mouth
-    const r = canvas.getBoundingClientRect();
-    const screenY = Math.max(70, r.height * 0.16);
-    sprinkle(at, screenY * (H / r.height) + 12);
-    moveShaker(r.left + at * (r.width / W), r.top + screenY);
-    showShaker(true);
-    pour();
+    // Take the tub out, but do not tip it: where the food goes is the player's call.
+    if (pointerInTank && lastPointer) {
+      moveShaker(lastPointer.x, lastPointer.y);
+      showShaker(true);
+    } else {
+      const r = canvas.getBoundingClientRect();
+      moveShaker(r.left + r.width * 0.5, r.top + Math.max(70, r.height * 0.16));
+      showShaker(true, true);
+    }
   });
 
   /* ---- clean ---- */
