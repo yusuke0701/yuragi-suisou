@@ -1073,6 +1073,7 @@
   let cleanFlash = 0;
   const sparks = [];
   const bubbles = [];
+  const BUBBLE_MAX = 260;
 
   /* ------------------------------------------------------------------ *
    * helpers
@@ -1514,17 +1515,35 @@
       if (s.life <= 0) sparks.splice(i, 1);
     }
 
-    // bubbles: airstones + occasional ambient
+    // Bubbles: every airstone gets its own budget. A single shared cap would let
+    // whichever stone comes first in the list grab each freed slot.
     const stones = state.decor.filter(d => d.key === "airstone");
     updateAmbient.acc = (updateAmbient.acc || 0) + dt;
     if (updateAmbient.acc > 0.09) {
       updateAmbient.acc = 0;
-      for (const st of stones) {
-        if (bubbles.length < 110) {
-          bubbles.push({ x: st.x + rnd(-7, 7), y: sandTop() - 6, r: rnd(1.6, 3.6), sp: rnd(28, 52), seed: rnd(0, 10) });
+
+      if (stones.length) {
+        const perStone = clamp(Math.floor(BUBBLE_MAX / stones.length), 26, 130);
+        const mine = new Map();
+        for (const b of bubbles) {
+          if (b.src != null) mine.set(b.src, (mine.get(b.src) || 0) + 1);
+        }
+        for (const st of stones) {
+          if ((mine.get(st.id) || 0) >= perStone) continue;
+          const w = decorPx(st);
+          bubbles.push({
+            src: st.id,
+            x: st.x + rnd(-w * 0.3, w * 0.3),
+            y: sandBase(st.x) - w * 0.34,
+            r: rnd(1.6, 3.6) * clamp(st.scale || 1, 0.75, 1.4),
+            sp: rnd(28, 52),
+            seed: rnd(0, 10)
+          });
         }
       }
-      if (!REDUCED && bubbles.length < 12 && Math.random() < 0.06) {
+
+      const ambient = bubbles.reduce((n, b) => n + (b.src == null ? 1 : 0), 0);
+      if (!REDUCED && ambient < 12 && Math.random() < 0.06) {
         bubbles.push({ x: rnd(10, W - 10), y: sandTop() - rnd(0, H * 0.3), r: rnd(1, 2.2), sp: rnd(16, 30), seed: rnd(0, 10) });
       }
     }
@@ -2761,7 +2780,7 @@
     for (const p of state.pets) { p.x *= sx; p.y *= sy; }
     for (const d of state.decor) d.x *= sx;
     for (const f of state.food) { f.x *= sx; f.y *= sy; }
-    bubbles.length = 0;
+    for (const b of bubbles) { b.x *= sx; b.y *= sy; }
 
     W = nw; H = nh;
   }
