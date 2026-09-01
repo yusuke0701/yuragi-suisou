@@ -102,7 +102,11 @@ export function tickEconomy(dt) {
       if (clean) full += clean * (0.55 + t.dirt * 1.1) / 3600 * dt;
       p.full = clamp(full, 0, 1);
     }
-    const load = t.pets.length * 0.0000055 * (t.night ? 0.5 : 1);
+    // 汚す量は種ごと（bio、メダカ = 1.0）。匹数で数えると、メダカも金魚も
+    // 石巻貝も同じだけ汚すことになり、コケ取り役が自分の汚しを取り返せない
+    let bio = 0;
+    for (const p of t.pets) bio += SPECIES[p.key].bio ?? 1;
+    const load = bio * 0.0000022 * (t.night ? 0.5 : 1);
     const scrub = cleanPowerOf(t) * 0.0000042;
     t.dirt = clamp(t.dirt + (load - scrub) * dt, 0, 1);
     earned += rateOf(t) / 60 * dt;

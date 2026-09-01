@@ -4,119 +4,119 @@ import { moodOf } from "./util.js";
 
 export const SPECIES = {
   medaka: {
-    kind: "fish", name: "メダカ", price: 20, rate: 0.6, size: 20, ratio: 0.44,
+    kind: "fish", name: "メダカ", price: 20, rate: 0.6, bio: 1.0, size: 20, ratio: 0.44,
     c1: "#c9832f", c2: "#ffe6b4", fin: "#ffd58a", tail: "fork", mark: "none",
     note: "小さくて丈夫。はじめの一匹に。"
   },
   neon: {
-    kind: "fish", name: "ネオンテトラ", price: 30, rate: 0.9, size: 24, ratio: 0.42,
+    kind: "fish", name: "ネオンテトラ", price: 30, rate: 0.9, bio: 0.9, size: 24, ratio: 0.42,
     c1: "#1d5d80", c2: "#a9e6fb", fin: "#bfe9f7", tail: "fork", mark: "neon",
     note: "青い光の帯。群れると映える。"
   },
   guppy: {
-    kind: "fish", name: "グッピー", price: 45, rate: 1.2, size: 23, ratio: 0.44,
+    kind: "fish", name: "グッピー", price: 45, rate: 1.2, bio: 1.0, size: 23, ratio: 0.44,
     c1: "#d9622a", c2: "#ffd58f", fin: "#ff9f5f", tail: "veil", mark: "spots",
     note: "ひらひらの尾びれが自慢。"
   },
   cory: {
-    kind: "fish", name: "コリドラス", price: 80, rate: 1.7, size: 27, ratio: 0.5,
+    kind: "fish", name: "コリドラス", price: 80, rate: 1.7, bio: 1.5, size: 27, ratio: 0.5,
     c1: "#7d7259", c2: "#e8dcc0", fin: "#d6c9a6", tail: "fork", mark: "spots",
     bottom: true, clean: 0.15,
     note: "砂の上をつつく底ぐらし。少し掃除もする。"
   },
   eel: {
-    kind: "eel", name: "チンアナゴ", price: 95, rate: 1.9, size: 56,
+    kind: "eel", name: "チンアナゴ", price: 95, rate: 1.9, bio: 0.8, size: 56,
     c1: "#cfc6b2", c2: "#fbf8f0",
     note: "砂から生えてゆらゆら。おどろくと引っこむ。"
   },
   goldfish: {
-    kind: "fish", name: "金魚", price: 130, rate: 2.3, size: 33, ratio: 0.66,
+    kind: "fish", name: "金魚", price: 130, rate: 2.3, bio: 4.0, size: 33, ratio: 0.66,
     c1: "#e3521f", c2: "#ffcf7a", fin: "#ff9b57", tail: "veil", mark: "none",
     note: "中国生まれ、日本で育った定番。"
   },
   betta: {
-    kind: "fish", name: "ベタ", price: 190, rate: 3.1, size: 28, ratio: 0.62,
+    kind: "fish", name: "ベタ", price: 190, rate: 3.1, bio: 2.2, size: 28, ratio: 0.62,
     c1: "#33269c", c2: "#8f6bff", fin: "#ff5c9e", tail: "flow", mark: "none",
     note: "布のようなひれ。ひとりが好き。"
   },
   angel: {
-    kind: "fish", name: "エンゼルフィッシュ", price: 280, rate: 4.2, size: 30, ratio: 0.9,
+    kind: "fish", name: "エンゼルフィッシュ", price: 280, rate: 4.2, bio: 3.5, size: 30, ratio: 0.9,
     c1: "#a49b88", c2: "#fdfaf0", fin: "#efe6d0", tail: "flow", mark: "tiger",
     tall: true,
     note: "縦に長い体。水槽の主役。"
   },
   yoshinobori: {
-    kind: "fish", name: "ヨシノボリ", price: 90, rate: 1.4, size: 25, ratio: 0.46,
+    kind: "fish", name: "ヨシノボリ", price: 90, rate: 1.4, bio: 1.0, size: 25, ratio: 0.46,
     c1: "#7a6a52", c2: "#ded0b3", fin: "#c3b18d", tail: "fan", mark: "spots",
     bottom: true, clean: 0.12,
     note: "石の上にちょこんと乗る。縄張り意識は強め。"
   },
   dojo: {
-    kind: "fish", name: "ドジョウ", price: 110, rate: 1.6, size: 36, ratio: 0.21,
+    kind: "fish", name: "ドジョウ", price: 110, rate: 1.6, bio: 1.1, size: 36, ratio: 0.21,
     c1: "#6b5c43", c2: "#c8b795", fin: "#a89473", tail: "fan", mark: "spots",
     bottom: true, whisker: true, clean: 0.1,
     note: "砂にもぐって休む。ひげが自慢。"
   },
   tanago: {
-    kind: "fish", name: "タナゴ", price: 140, rate: 1.8, size: 25, ratio: 0.54,
+    kind: "fish", name: "タナゴ", price: 140, rate: 1.8, bio: 1.4, size: 25, ratio: 0.54,
     c1: "#7f939b", c2: "#f3f8f7", fin: "#eaa88e", tail: "fork", mark: "tanago",
     note: "婚姻色の出た雄は驚くほど鮮やか。"
   },
   oikawa: {
-    kind: "fish", name: "オイカワ", price: 200, rate: 2.4, size: 30, ratio: 0.42,
+    kind: "fish", name: "オイカワ", price: 200, rate: 2.4, bio: 1.6, size: 30, ratio: 0.42,
     c1: "#7d8f96", c2: "#f5f9f9", fin: "#e77fa8", tail: "fork", mark: "oikawa",
     note: "清流の代表。雄は桃と緑の婚姻色をまとう。"
   },
   minami: {
-    kind: "shrimp", name: "ミナミヌマエビ", price: 40, rate: 0.9, size: 15,
+    kind: "shrimp", name: "ミナミヌマエビ", price: 40, rate: 0.9, bio: 0.2, size: 15,
     c1: "#8fb59a", c2: "#dff0e2", clean: 0.35,
     note: "コケを食べて水をきれいに保つ。餌がなくてもやっていける。"
   },
   redbee: {
-    kind: "shrimp", name: "レッドビーシュリンプ", price: 160, rate: 2.5, size: 15,
+    kind: "shrimp", name: "レッドビーシュリンプ", price: 160, rate: 2.5, bio: 0.2, size: 15,
     c1: "#c92c34", c2: "#fff4f0", clean: 0.3, banded: true,
     note: "紅白の縞。小さな宝石。"
   },
   sujiebi: {
-    kind: "shrimp", name: "スジエビ", price: 70, rate: 1.2, size: 17,
+    kind: "shrimp", name: "スジエビ", price: 70, rate: 1.2, bio: 0.25, size: 17,
     c1: "#a6b3ab", c2: "#eff4f0", clean: 0.25, striped: true,
     note: "透明な体に走る黒い筋。やや気が荒い。"
   },
   snail: {
-    kind: "snail", name: "石巻貝", price: 25, rate: 0.3, size: 13,
+    kind: "snail", name: "石巻貝", price: 25, rate: 0.3, bio: 0.15, size: 13,
     c1: "#3d3126", c2: "#c7a878", clean: 0.6,
     note: "ガラスのコケ取り担当。コケが主食なので餌いらず。"
   },
   ramshorn: {
-    kind: "snail", name: "ラムズホーン", price: 40, rate: 0.4, size: 14,
+    kind: "snail", name: "ラムズホーン", price: 40, rate: 0.4, bio: 0.15, size: 14,
     c1: "#a32a12", c2: "#f28a4c", clean: 0.55,
     note: "赤い巻貝。よく増える働き者。"
   },
 
   /* ---- 日本の海水魚 ---- */
   deba: {
-    kind: "fish", name: "デバスズメダイ", price: 80, rate: 1.5, size: 21, ratio: 0.52,
+    kind: "fish", name: "デバスズメダイ", price: 80, rate: 1.5, bio: 1.0, size: 21, ratio: 0.52,
     c1: "#3f8f8a", c2: "#c2f2e4", fin: "#84dcc9", tail: "fork", mark: "sheen",
     note: "群れると水色の霞のよう。"
   },
   ruri: {
-    kind: "fish", name: "ルリスズメダイ", price: 130, rate: 2.0, size: 22, ratio: 0.56,
+    kind: "fish", name: "ルリスズメダイ", price: 130, rate: 2.0, bio: 1.1, size: 22, ratio: 0.56,
     c1: "#12379e", c2: "#63b0ff", fin: "#2f6fe0", tail: "fork", mark: "sheen",
     note: "光の当たり方で青が変わる。"
   },
   clownfish: {
-    kind: "fish", name: "カクレクマノミ", price: 170, rate: 2.3, size: 26, ratio: 0.6,
+    kind: "fish", name: "カクレクマノミ", price: 170, rate: 2.3, bio: 1.8, size: 26, ratio: 0.6,
     c1: "#d9581a", c2: "#ff9d52", fin: "#c04a17", tail: "fan", mark: "clown", finK: 0.86,
     note: "イソギンチャクの間から顔を出す。"
   },
   hakofugu: {
-    kind: "fish", name: "ミナミハコフグ", price: 280, rate: 3.0, size: 22, ratio: 0.9,
+    kind: "fish", name: "ミナミハコフグ", price: 280, rate: 3.0, bio: 3.0, size: 22, ratio: 0.9,
     c1: "#d6a30c", c2: "#ffe469", fin: "#f0c93f", tail: "fan", mark: "spots", boxy: true,
     finK: 0.44, spotColor: "rgba(38,28,12,.8)",
     note: "幼魚は黄色い箱。ふわふわ泳ぐ。"
   },
   yadokari: {
-    kind: "snail", name: "ヤドカリ", price: 95, rate: 0.6, size: 21,
+    kind: "snail", name: "ヤドカリ", price: 95, rate: 0.6, bio: 0.3, size: 21,
     c1: "#7a5a3a", c2: "#dcc198", clean: 0.5, hermit: true,
     note: "貝がらを背負って砂を掃除する。"
   }
@@ -229,8 +229,8 @@ export const UNLOCKS = {
     }
   },
   dojo: {
-    need: 8 * 3600, hint: "水質を85%以上にたもつ",
-    holds: t => t.dirt <= 0.15
+    need: 8 * 3600, hint: "水質を95%以上にたもつ",
+    holds: t => t.dirt <= 0.05
   },
   oikawa: {
     need: 12 * 3600, hint: "きげんを75%以上にたもつ",
@@ -255,8 +255,8 @@ export const UNLOCKS = {
     holds: t => t.decor.filter(d => d.key === "coral" || d.key === "anemone").length >= 3
   },
   yadokari: {
-    need: 8 * 3600, hint: "海水水槽の水質を90%以上にたもつ",
-    holds: t => t.dirt <= 0.1
+    need: 8 * 3600, hint: "海水水槽の水質を95%以上にたもつ",
+    holds: t => t.dirt <= 0.05
   }
 };
 
