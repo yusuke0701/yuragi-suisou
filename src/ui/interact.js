@@ -153,6 +153,9 @@ export function setFeedMode(on) {
   feed.timer = on ? 12 : 0;
   document.getElementById("feedBtn").classList.toggle("is-armed", on);
   tankBox.classList.toggle("is-feeding", on);
+  // CSS で薄くするだけだと、見えないままタブで拾えて Enter で発火してしまう
+  tankPrev.disabled = on;
+  tankNext.disabled = on;
   if (!on) showShaker(false);
   if (on) {
     closeCard();
@@ -334,6 +337,7 @@ export function syncTankChrome() {
   biomeLabel.textContent = BIOMES[tank.biome].short;
   document.getElementById("room").classList.toggle("is-night", tank.night);
   syncCareDot();
+  syncTankNav();
 }
 
 export function useTank(key) {
@@ -423,6 +427,47 @@ document.getElementById("tankBtn").addEventListener("click", () => {
   openSheet(tanksSheet);
 });
 document.getElementById("tanksClose").addEventListener("click", closeSheets);
+
+/* ---- tank: 左右の送り ---- */
+
+export const tankPrev = document.getElementById("tankPrev");
+
+export const tankNext = document.getElementById("tankNext");
+
+// 買った水槽だけを地域の順に並べる。まだ買っていない水槽へは送らない
+// （買うのはシートの仕事で、送りは持ち物を見て回るためのもの）
+export function ownedTankKeys() {
+  return BIOME_KEYS.filter(key => state.tanks[key]);
+}
+
+export function neighbourTank(dir) {
+  const keys = ownedTankKeys();
+  const i = keys.indexOf(state.current);
+  if (keys.length < 2 || i < 0) return null;
+  return keys[(i + dir + keys.length) % keys.length];
+}
+
+// 行き先がないとき（水槽が1つだけ）はボタンごと消す。
+// 押せないボタンを水槽の上に残しておく理由がない
+export function syncTankNav() {
+  for (const [btn, dir] of [[tankPrev, -1], [tankNext, 1]]) {
+    const key = neighbourTank(dir);
+    btn.hidden = !key;
+    if (!key) continue;
+    btn.setAttribute("aria-label", BIOMES[key].name + "へ");
+    btn.title = BIOMES[key].name + "へ";
+  }
+}
+
+for (const [btn, dir] of [[tankPrev, -1], [tankNext, 1]]) {
+  btn.addEventListener("click", () => {
+    const key = neighbourTank(dir);
+    if (!key) return;
+    useTank(key);
+    // 名札は上のバーにしか出ないので、どこへ来たのかを一度だけ言う
+    toast(BIOMES[key].name + "に移った");
+  });
+}
 
 /* ---- shop ---- */
 
