@@ -1,7 +1,6 @@
 // 画面の寸法と、水槽内の座標系。
 
 import { DECOR, SPECIES } from "./catalogue.js";
-import { tank } from "./state.js";
 import { clamp } from "./util.js";
 
 export const canvas = document.getElementById("tank");

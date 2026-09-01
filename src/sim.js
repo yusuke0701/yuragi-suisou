@@ -2,7 +2,6 @@
 
 import { SPECIES } from "./catalogue.js";
 import { state, tank } from "./state.js";
-import { setFeedMode } from "./ui/interact.js";
 import { REDUCED, clamp, lerp, rnd } from "./util.js";
 import { H, W, decorPx, petPx, sandBase, sandTop, time, waterTop } from "./view.js";
 
@@ -16,6 +15,14 @@ export const BUBBLE_MAX = 260;
 export const feed = { on: false, timer: 0 };
 
 export const fx = { clean: 0 };
+
+// えさモードが時間切れになったことを UI に伝える口。
+// sim が UI を import すると依存が逆向きになり、しかも循環する
+// （interact.js は sim から feed や sprinkle を import している）。
+// economy.js の onUnlock と同じ逃がしかた。
+export let onFeedTimeout = () => {};
+
+export function setFeedTimeoutHandler(fn) { onFeedTimeout = fn; }
 
 export function nearestFood(p, reach) {
   let best = null, bd = reach * reach;
@@ -268,6 +275,6 @@ export function updateAmbient(dt) {
   if (fx.clean > 0) fx.clean = Math.max(0, fx.clean - dt);
   if (feed.on) {
     feed.timer -= dt;
-    if (feed.timer <= 0) setFeedMode(false);
+    if (feed.timer <= 0) onFeedTimeout();
   }
 }

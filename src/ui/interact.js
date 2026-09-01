@@ -4,7 +4,7 @@ import { BIOMES, BIOME_KEYS, DECOR, SPECIES, UNLOCKS, homeBiome, inBiome } from 
 import { drawPreview } from "../draw/scene.js";
 import { needsCare, rateOf, unlockHint, unlockProgress } from "../economy.js";
 import { freeEelX, makeDecor, makePet } from "../entities.js";
-import { bubbles, feed, fx, sparks, sprinkle } from "../sim.js";
+import { bubbles, feed, fx, setFeedTimeoutHandler, sparks, sprinkle } from "../sim.js";
 import { makeTank, save, selection, setTank, state, tank } from "../state.js";
 import { el, syncHud } from "./chrome.js";
 import { CAPACITY, DECOR_CAP, SAVE_KEY, clamp, hideHint, rnd, showHint, toast } from "../util.js";
@@ -147,6 +147,9 @@ export function pour() {
   clearTimeout(pour.t);
   pour.t = setTimeout(() => shaker.classList.remove("is-pouring"), 650);
 }
+
+// 時間切れは sim が数えている。sim から呼び戻してもらう
+setFeedTimeoutHandler(() => setFeedMode(false));
 
 export function setFeedMode(on) {
   feed.on = on;
@@ -688,12 +691,16 @@ cardRelease.addEventListener("click", () => {
 
 /* ---- tank name ---- */
 
-el.tankName.addEventListener("input", () => {
-  tank.name = el.tankName.value.slice(0, 14);
-  save();
-});
-
-
-// main.js から呼ばれる。読み込み時点でイベントは登録済みなので、
+// main.js から呼ばれる。ほとんどのイベントは読み込み時点で登録済みで、
 // ここは「このモジュールを確実に評価させる」ための入口。
-export function wireInteractions() {}
+//
+// **水槽の名前だけは、ここで登録する。** el は chrome.js のもので、
+// chrome.js と interact.js は相互に import している。読み込みの途中で
+// el を触ると、どちらが先に評価されるかによって TDZ に落ちる。
+// 相互参照そのものは、関数の中でだけ使うかぎり実害がない。
+export function wireInteractions() {
+  el.tankName.addEventListener("input", () => {
+    tank.name = el.tankName.value.slice(0, 14);
+    save();
+  });
+}

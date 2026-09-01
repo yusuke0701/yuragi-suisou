@@ -5,7 +5,6 @@ import { drawEelShape, drawFishShape, drawPet, drawShrimpShape, drawSnailShape }
 import { drawDecor } from "./decor.js";
 import { bubbles, fx, sparks } from "../sim.js";
 import { save, state, tank } from "../state.js";
-import { card } from "../ui/interact.js";
 import { clamp, mulberry32 } from "../util.js";
 import { H, W, ctx, sandBase, sandTop, time, waterTop } from "../view.js";
 

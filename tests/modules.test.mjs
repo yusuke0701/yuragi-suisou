@@ -54,3 +54,40 @@ describe("import した束縛への代入がない", () => {
     });
   }
 });
+
+// 依存は上から下へ。`economy` / `sim` -> `draw` -> `ui` -> `main`。
+// 逆向きの import があると、下の層を読むだけで UI 全体が評価される
+// （テストの DOM スタブが膨らんだ原因がこれだった）。
+describe("依存の向き", () => {
+  const layerOf = name =>
+    name === "main.js" ? "main" : name.startsWith("ui/") ? "ui"
+      : name.startsWith("draw/") ? "draw" : "core";
+
+  // その層が import してよい層
+  const allowed = {
+    core: ["core"],
+    draw: ["core", "draw"],
+    ui: ["core", "draw", "ui"],
+    main: ["core", "draw", "ui", "main"]
+  };
+
+  function importsOf(file) {
+    const src = readFileSync(file, "utf8");
+    const dir = file.slice(0, file.lastIndexOf("/"));
+    return [...src.matchAll(/^import[^"']*["']([^"']+)["']/gm)]
+      .map(m => m[1])
+      .filter(spec => spec.startsWith("."))
+      .map(spec => relative(root, join(dir, spec)));
+  }
+
+  for (const file of files) {
+    const name = relative(root, file);
+    const from = layerOf(name);
+    test(name + " は " + allowed[from].join(" / ") + " だけを import する", () => {
+      const bad = importsOf(file)
+        .filter(dep => !allowed[from].includes(layerOf(dep)))
+        .map(dep => name + " -> " + dep);
+      assert.deepEqual(bad, [], "依存が逆向き: " + bad.join(", "));
+    });
+  }
+});
