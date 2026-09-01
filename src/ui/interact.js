@@ -153,6 +153,9 @@ export function setFeedMode(on) {
   feed.timer = on ? 12 : 0;
   document.getElementById("feedBtn").classList.toggle("is-armed", on);
   tankBox.classList.toggle("is-feeding", on);
+  // CSS で薄くするだけだと、見えないままタブで拾えて Enter で発火してしまう
+  tankPrev.disabled = on;
+  tankNext.disabled = on;
   if (!on) showShaker(false);
   if (on) {
     closeCard();
