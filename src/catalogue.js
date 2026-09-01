@@ -133,6 +133,11 @@ export const DECOR = {
   bamboo:    { name: "竹筒",     price: 75,  size: 76, note: "ドジョウが好んで入る。日本の水辺らしさ。" },
   airstone:  { name: "エアストーン", price: 110, size: 22, note: "泡がのぼる。水がすこし澄む。", clean: 0.4 },
   castle:    { name: "お城",     price: 220, size: 80, note: "水槽の中の小さな城下町。" },
+  anubias:   { name: "アヌビアス", price: 45, size: 54, note: "厚い葉を広げる。丈夫でよく育つ。" },
+  rotala:    { name: "ロタラ",     price: 65, size: 60, note: "赤く色づく水草。水草水槽の彩り。" },
+  pipe:      { name: "素焼きの土管", price: 55, size: 68, note: "熱帯魚の定番の隠れ家。産卵床にもなる。" },
+  lantern:   { name: "灯籠",       price: 140, size: 62, note: "苔むした石灯籠。和の水辺に。" },
+  clam:      { name: "シャコガイ",  price: 120, size: 40, note: "貝のふちに色とりどりの外套膜。" },
   liverock:  { name: "ライブロック", price: 70, size: 46, note: "石灰藻のついた岩。海水の景色の土台。" },
   anemone:   { name: "イソギンチャク", price: 130, size: 44, note: "ゆらゆら揺れる。クマノミが住みつく。" }
 };
@@ -195,8 +200,10 @@ export const HOME = {
   rock: "any", airstone: "any",
   plant: ["japanFresh", "tropical"], driftwood: ["japanFresh", "tropical"],
   marimo: ["japanFresh"], leaves: ["japanFresh"], bamboo: ["japanFresh"],
-  castle: ["tropical"],
-  liverock: ["marine"], coral: ["marine"], anemone: ["marine"], shell: ["marine"]
+  castle: ["tropical"], anubias: ["tropical"], rotala: ["tropical"], pipe: ["tropical"],
+  lantern: ["japanFresh"],
+  liverock: ["marine"], coral: ["marine"], anemone: ["marine"], shell: ["marine"],
+  clam: ["marine"]
 };
 
 export const inBiome = (key, biome) => HOME[key] === "any" || HOME[key].indexOf(biome) >= 0;
@@ -253,7 +260,8 @@ export const UNLOCKS = {
   }
 };
 
-export const SOLID_DECOR = { rock: 1, liverock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1, shell: 1, bamboo: 1, anemone: 1 };
+export const SOLID_DECOR = { rock: 1, liverock: 1, driftwood: 1, castle: 1, marimo: 1, coral: 1,
+                             shell: 1, bamboo: 1, anemone: 1, pipe: 1, lantern: 1, clam: 1 };
 
 export const NAME_POOL = ["ぷか", "あおば", "こむぎ", "しらす", "もなか", "きなこ", "つぶら",
                    "ゆらり", "まめ", "ぽん", "すい", "みずき", "あわ", "こはく",

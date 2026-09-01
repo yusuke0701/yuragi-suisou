@@ -459,6 +459,250 @@ export function drawDecor(g, d, baseY, sizeOverride) {
       g.fill();
       break;
     }
+    case "anubias": {
+      // 太い根茎から、厚く丸い葉を低く広げる。水草とは形が別物になるように
+      const leaves = 7;
+      g.fillStyle = "#4a3a26";
+      g.beginPath();
+      g.ellipse(0, -s * 0.03, s * 0.2, s * 0.05, 0, 0, 7);
+      g.fill();
+      for (let i = 0; i < leaves; i++) {
+        const a = -Math.PI * 0.92 + (i / (leaves - 1)) * Math.PI * 0.84;
+        const len = s * (0.3 + ((i * 5) % 3) * 0.06);
+        const sway = Math.sin(time * 0.5 + i * 1.1 + d.seed * 0.19) * 0.06;
+        const ex = Math.cos(a + sway) * len, ey = -s * 0.04 + Math.sin(a + sway) * len * 0.8;
+
+        g.strokeStyle = "#3b6f3a";
+        g.lineWidth = Math.max(1, s * 0.022);
+        g.beginPath();
+        g.moveTo(0, -s * 0.04);
+        g.lineTo(ex * 0.45, ey * 0.55);
+        g.stroke();
+
+        g.save();
+        g.translate(ex * 0.45, ey * 0.55);
+        g.rotate(Math.atan2(ey * 0.45, ex * 0.55));
+        const lg = g.createLinearGradient(0, -s * 0.08, 0, s * 0.08);
+        lg.addColorStop(0, "#3f8248");
+        lg.addColorStop(1, "#1f4f2c");
+        g.fillStyle = lg;
+        g.beginPath();
+        g.ellipse(len * 0.38, 0, len * 0.42, s * 0.085, 0, 0, 7);
+        g.fill();
+        g.strokeStyle = "rgba(120,190,130,.35)";
+        g.lineWidth = Math.max(0.5, s * 0.008);
+        g.beginPath();
+        g.moveTo(0, 0);
+        g.lineTo(len * 0.78, 0);
+        g.stroke();
+        g.restore();
+      }
+      break;
+    }
+    case "rotala": {
+      // 細い茎の束。上ほど赤く色づく
+      const stems = 9;
+      for (let i = 0; i < stems; i++) {
+        const off = (i - (stems - 1) / 2) * s * 0.075 + (r() - 0.5) * s * 0.04;
+        const h = s * (0.55 + r() * 0.5);
+        const sway = Math.sin(time * 0.7 + i * 0.7 + d.seed * 0.27) * s * 0.13;
+        const sx = t => off + sway * t * t;
+        const sy = t => -h * t;
+
+        g.strokeStyle = "#5d7a3c";
+        g.lineWidth = Math.max(1, s * 0.026);
+        g.lineCap = "round";
+        g.beginPath();
+        g.moveTo(off, 0);
+        for (let k = 1; k <= 8; k++) g.lineTo(sx(k / 8), sy(k / 8));
+        g.stroke();
+
+        for (let k = 1; k <= 7; k++) {
+          const t = k / 7.4;
+          const warm = t * t;                       // 上へ行くほど赤い
+          g.fillStyle = "rgb(" + Math.round(96 + warm * 130) + ","
+                               + Math.round(132 - warm * 62) + ","
+                               + Math.round(62 + warm * 46) + ")";
+          for (const side of [-1, 1]) {
+            g.save();
+            g.translate(sx(t), sy(t));
+            g.rotate(side * (1.1 - t * 0.3));
+            g.beginPath();
+            g.ellipse(s * 0.05, 0, s * 0.055, s * 0.018, 0, 0, 7);
+            g.fill();
+            g.restore();
+          }
+        }
+      }
+      break;
+    }
+    case "pipe": {
+      const len = s * 0.86, rad = s * 0.19;
+      g.save();
+      g.rotate(0.05);
+      const grad = g.createLinearGradient(0, -rad * 2, 0, 0);
+      grad.addColorStop(0, "#d9855c");
+      grad.addColorStop(0.5, "#b3603a");
+      grad.addColorStop(1, "#6f3a22");
+      g.fillStyle = grad;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(-len / 2, -rad * 2, len, rad * 2, rad * 0.3);
+      else g.rect(-len / 2, -rad * 2, len, rad * 2);
+      g.fill();
+
+      // 口の縁を一段太くする
+      for (const side of [-1, 1]) {
+        g.fillStyle = side < 0 ? "#c4703f" : "rgba(90,46,26,.5)";
+        g.beginPath();
+        if (g.roundRect) g.roundRect(side * (len / 2) - side * rad * 0.34, -rad * 2.12, rad * 0.34, rad * 2.24, rad * 0.18);
+        else g.rect(side * (len / 2) - side * rad * 0.34, -rad * 2.12, rad * 0.34, rad * 2.24);
+        g.fill();
+      }
+
+      g.fillStyle = "#3c2113";
+      g.beginPath();
+      g.ellipse(-len / 2 + rad * 0.1, -rad, rad * 0.4, rad * 0.95, 0, 0, 7);
+      g.fill();
+      g.strokeStyle = "#e0a077";
+      g.lineWidth = Math.max(0.8, s * 0.018);
+      g.stroke();
+
+      g.fillStyle = "rgba(92,132,72,.26)";
+      for (let i = 0; i < 6; i++) {
+        g.beginPath();
+        g.ellipse(-len / 2 + r() * len, -rad * 2 + r() * rad * 1.9,
+                  s * (0.03 + r() * 0.04), s * 0.016, (r() - 0.5), 0, 7);
+        g.fill();
+      }
+      g.restore();
+      break;
+    }
+    case "lantern": {
+      const w = s * 0.34;
+      const stone = (y, hw, hh, tone) => {
+        const lg = g.createLinearGradient(-hw, 0, hw, 0);
+        lg.addColorStop(0, tone[0]);
+        lg.addColorStop(0.45, tone[1]);
+        lg.addColorStop(1, tone[2]);
+        g.fillStyle = lg;
+        g.beginPath();
+        if (g.roundRect) g.roundRect(-hw, y - hh, hw * 2, hh, hw * 0.12);
+        else g.rect(-hw, y - hh, hw * 2, hh);
+        g.fill();
+      };
+      const light = ["#b9b4a6", "#8f8a7c", "#5f5b50"];
+      const dark = ["#a29d90", "#7b766a", "#514e45"];
+
+      stone(0, w * 0.9, s * 0.07, dark);              // 基礎
+      stone(-s * 0.06, w * 0.34, s * 0.22, light);    // 竿
+      stone(-s * 0.27, w * 0.72, s * 0.07, dark);     // 中台
+      stone(-s * 0.33, w * 0.62, s * 0.2, light);     // 火袋
+
+      // 火袋の窓
+      g.fillStyle = "rgba(38,34,26,.75)";
+      g.beginPath();
+      g.ellipse(0, -s * 0.43, w * 0.22, s * 0.07, 0, 0, 7);
+      g.fill();
+
+      // 笠（反りのある屋根）
+      const rg = g.createLinearGradient(0, -s * 0.66, 0, -s * 0.46);
+      rg.addColorStop(0, "#b4aea0");
+      rg.addColorStop(1, "#6f6a5e");
+      g.fillStyle = rg;
+      g.beginPath();
+      g.moveTo(0, -s * 0.66);                                   // てっぺん
+      g.quadraticCurveTo(w * 0.55, -s * 0.58, w * 1.2, -s * 0.56);
+      g.quadraticCurveTo(w * 1.3, -s * 0.5, w * 1.05, -s * 0.5);  // 反り上がった軒先
+      g.quadraticCurveTo(w * 0.5, -s * 0.47, 0, -s * 0.47);
+      g.quadraticCurveTo(-w * 0.5, -s * 0.47, -w * 1.05, -s * 0.5);
+      g.quadraticCurveTo(-w * 1.3, -s * 0.5, -w * 1.2, -s * 0.56);
+      g.quadraticCurveTo(-w * 0.55, -s * 0.58, 0, -s * 0.66);
+      g.fill();
+      g.strokeStyle = "rgba(60,56,48,.3)";
+      g.lineWidth = Math.max(0.5, s * 0.009);
+      g.beginPath();
+      g.moveTo(0, -s * 0.66);
+      g.lineTo(0, -s * 0.47);
+      g.stroke();
+      g.fillStyle = "#a8a294";
+      g.beginPath();
+      g.ellipse(0, -s * 0.66, w * 0.13, s * 0.045, 0, 0, 7);   // 宝珠
+      g.fill();
+
+      // 苔
+      g.fillStyle = "rgba(88,124,66,.34)";
+      for (let i = 0; i < 8; i++) {
+        g.beginPath();
+        g.ellipse((r() - 0.5) * w * 1.8, -r() * s * 0.5,
+                  s * (0.025 + r() * 0.035), s * 0.016, (r() - 0.5), 0, 7);
+        g.fill();
+      }
+      break;
+    }
+    case "clam": {
+      const w = s * 0.46, h = s * 0.24;
+      // 下の殻・外套膜・上の殻の3段に分ける。重ねると玉に見えてしまう
+      const shell = (yTop, yBase, tilt, flip) => {
+        g.save();
+        g.translate(0, yBase);
+        g.rotate(tilt);
+        const lg = g.createLinearGradient(0, yTop - yBase, 0, 0);
+        lg.addColorStop(0, "#f7f0de");
+        lg.addColorStop(1, "#bfad8e");
+        g.fillStyle = lg;
+        const dome = yTop - yBase;
+        g.beginPath();
+        g.moveTo(-w, 0);
+        g.quadraticCurveTo(-w * 0.72, dome * 1.3, 0, dome);
+        g.quadraticCurveTo(w * 0.72, dome * 1.3, w, 0);
+        for (let k = 9; k >= 0; k--) {          // 合わせ目のぎざぎざ
+          const x = -w + (k / 9) * w * 2;
+          g.lineTo(x, k % 2 ? -flip * h * 0.14 : 0);
+        }
+        g.closePath();
+        g.fill();
+        g.strokeStyle = "rgba(126,108,82,.42)";
+        g.lineWidth = Math.max(0.5, s * 0.011);
+        for (let k = 1; k <= 6; k++) {
+          const x = -w + (k / 7) * w * 2;
+          g.beginPath();
+          g.moveTo(x, 0);
+          g.quadraticCurveTo(x * 0.66, dome * 0.72, x * 0.2, dome * 0.95);
+          g.stroke();
+        }
+        g.restore();
+      };
+
+      shell(-h * 0.85, 0, 0.05, 1);            // 下の殻（砂に座る）
+
+      const mg = g.createLinearGradient(-w, 0, w, 0);
+      mg.addColorStop(0, "#146c98");
+      mg.addColorStop(0.36, "#33cdb6");
+      mg.addColorStop(0.7, "#7f5ad6");
+      mg.addColorStop(1, "#146c98");
+      g.fillStyle = mg;
+      g.beginPath();
+      g.moveTo(-w * 0.74, -h * 0.72);
+      for (let k = 0; k <= 14; k++) {
+        const t = k / 14;
+        g.lineTo(-w * 0.74 + t * w * 1.48, -h * 1.2 - Math.sin(t * Math.PI * 3.5) * h * 0.14);
+      }
+      for (let k = 14; k >= 0; k--) {
+        const t = k / 14;
+        g.lineTo(-w * 0.74 + t * w * 1.48, -h * 0.68 + Math.sin(t * Math.PI * 2.5) * h * 0.09);
+      }
+      g.closePath();
+      g.fill();
+      g.fillStyle = "rgba(240,255,252,.5)";
+      for (let k = 0; k < 9; k++) {
+        g.beginPath();
+        g.arc(-w * 0.6 + k * w * 0.15, -h * 0.95 + Math.sin(k * 1.4) * h * 0.12, s * 0.017, 0, 7);
+        g.fill();
+      }
+
+      shell(-h * 2.1, -h * 1.15, -0.11, -1);   // 上の殻を持ち上げて開いて見せる
+      break;
+    }
     case "airstone": {
       g.fillStyle = "#3c4a4e";
       g.beginPath();
